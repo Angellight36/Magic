@@ -21,3 +21,4 @@ If you mainly want to help with design, feature ideas, and review, start with:
 ## Local-only references
 
 The local Fabric docs mirror in `FabricDocs/` is intentionally not tracked in git because it is a downloaded reference copy, not project-authored content.
+To access the Fabric docs visit: https://docs.fabricmc.net/ or https://docs.fabricmc.net/develop/ 

@@ -1,5 +1,6 @@
 # Local references and generated docs mirrors
-FabricDocs/
+/FabricDocs/
+FabricDocs/**
 
 # OS/editor noise
 Thumbs.db
