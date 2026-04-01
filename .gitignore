@@ -1,0 +1,15 @@
+# Local references and generated docs mirrors
+FabricDocs/
+
+# OS/editor noise
+Thumbs.db
+.DS_Store
+
+# Gradle and build outputs
+minecraft-mod/.gradle/
+minecraft-mod/build/
+minecraft-mod/run/
+
+# IDE folders
+.idea/
+*.iml

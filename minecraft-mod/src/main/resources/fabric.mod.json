@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "magicgame",
+  "version": "${version}",
+  "name": "Magic",
+  "description": "A Fabric-based prototype for a composable magic language, persistent spells, and multiplayer-friendly playtesting.",
+  "authors": [
+    "antho"
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/"
+  },
+  "license": "All Rights Reserved",
+  "icon": "assets/magicgame/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.anthony.magicgame.MagicGameMod"
+    ],
+    "client": [
+      "com.anthony.magicgame.client.MagicGameClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.18.2",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
