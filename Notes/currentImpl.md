@@ -66,6 +66,8 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockedBlockManager.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockingPatternBlocks.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockingPatternInteractionGuard.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockingPatternInteractionRules.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockedBlockClientCache.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicStatusCommand.java`
 
 ### 3. Player mana system
@@ -219,6 +221,7 @@ Primary implementation:
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\ManaHudPayload.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\LockStatePayload.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\SpellFeedbackPayload.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicClientNetworking.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicHudOverlay.java`
@@ -230,7 +233,7 @@ Primary implementation:
 - `glyph_focus` is currently only one casting aid, not a universal lore rule for who can perform magic
 - Pressing `G` while holding the focus opens a client-side glyph composer
 - The composer can append glyphs by category, analyze the current chain, cast it, remove the last glyph, or clear the chain
-- The composer now shows the current chain as visible glyph chips while you build it and uses a neutral dark overlay instead of the earlier heavy blue tint
+- The composer now shows the current chain as readable wrapped glyph text while you build it and uses a neutral dark overlay instead of the earlier heavy blue tint
 - Pressing `R` while holding the focus quick-casts the last composed chain
 - The composer currently reuses the existing `/magic analyze chain ...` and `/magic cast chain ...` server commands under the hood so the early gameplay loop does not fork the spell runtime yet
 
@@ -275,6 +278,7 @@ Source:
 - Stateful blocks with exposed booleans can have those states re-enforced while a magical tag is active.
 - Container-backed blocks can still be tagged and blocked from manual interaction even when there is no useful open/closed property to freeze.
 - Locked blocks now block manual interaction until their magical lock state is removed.
+- Client lock-state sync now exists so locked doors and similar blocks can deny predicted interaction locally instead of briefly flickering open first.
 - Prototype keying now exists on top of the same lock state:
   - `linked_key` carries a persistent lock signature
   - `physical_lock` can apply a keyed lock and mint the first linked key when needed
@@ -301,6 +305,7 @@ Primary implementation:
   - `linked_key`
   - `physical_lock`
 - First manual data JSONs now exist for:
+  - item definitions
   - item models
   - language entries
   - crafting recipes
@@ -316,6 +321,9 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicRecipeSerializers.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\LinkedKeyCopyRecipe.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\lang\en_us.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\items\glyph_focus.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\items\linked_key.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\items\physical_lock.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\glyph_focus.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\linked_key.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
@@ -327,6 +335,7 @@ Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\debug\MagicDebugSettingsTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\LinkedKeyItemTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\MagicItemResourceDefinitionTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainParserTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\ConstructionPlacementRulesTest.java`
@@ -335,6 +344,7 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellResolverTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\PatternInteractionRulesTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\LockKeyingTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\LockingPatternInteractionRulesTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\PatternTaggedBlocksTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstanceTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\TravelingSpellRuntimeTest.java`

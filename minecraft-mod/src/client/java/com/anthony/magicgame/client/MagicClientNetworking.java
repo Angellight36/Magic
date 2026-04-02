@@ -1,7 +1,10 @@
 package com.anthony.magicgame.client;
 
 import com.anthony.magicgame.network.ManaHudPayload;
+import com.anthony.magicgame.network.LockStatePayload;
 import com.anthony.magicgame.network.SpellFeedbackPayload;
+import com.anthony.magicgame.spell.pattern.LockedBlockClientCache;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 
 /**
@@ -16,5 +19,8 @@ public final class MagicClientNetworking {
                 context.client().execute(() -> MagicHudOverlay.updateMana(payload)));
         ClientPlayNetworking.registerGlobalReceiver(SpellFeedbackPayload.ID, (payload, context) ->
                 context.client().execute(() -> MagicHudOverlay.showSpellFeedback(payload)));
+        ClientPlayNetworking.registerGlobalReceiver(LockStatePayload.ID, (payload, context) ->
+                context.client().execute(() -> LockedBlockClientCache.replaceAll(payload.entries())));
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> LockedBlockClientCache.clear());
     }
 }

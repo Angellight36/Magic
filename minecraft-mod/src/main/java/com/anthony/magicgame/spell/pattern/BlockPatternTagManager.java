@@ -1,5 +1,6 @@
 package com.anthony.magicgame.spell.pattern;
 
+import com.anthony.magicgame.network.MagicNetworking;
 import com.mojang.serialization.Codec;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -43,6 +44,7 @@ public final class BlockPatternTagManager extends SavedData {
         }
         tags.add(TaggedBlockPatternState.from(tag, level, canonicalPos, keySignature));
         setDirty();
+        MagicNetworking.syncLockedBlocksForAll(level.getServer());
         return true;
     }
 
@@ -51,6 +53,7 @@ public final class BlockPatternTagManager extends SavedData {
         boolean removed = tags.removeIf(state -> state.matches(tag, level, canonicalPos));
         if (removed) {
             setDirty();
+            MagicNetworking.syncLockedBlocksForAll(level.getServer());
         }
         return removed;
     }
@@ -86,6 +89,12 @@ public final class BlockPatternTagManager extends SavedData {
         return tags.size();
     }
 
+    public List<TaggedBlockPatternState> statesForTag(BlockPatternTag tag) {
+        return tags.stream()
+                .filter(state -> state.tag() == tag)
+                .toList();
+    }
+
     public void tick(MinecraftServer server) {
         boolean changed = false;
         Iterator<TaggedBlockPatternState> iterator = tags.iterator();
@@ -105,6 +114,7 @@ public final class BlockPatternTagManager extends SavedData {
         }
         if (changed) {
             setDirty();
+            MagicNetworking.syncLockedBlocksForAll(server);
         }
     }
 

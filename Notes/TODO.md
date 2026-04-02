@@ -21,12 +21,12 @@
 - Keep tuning the weighted interpreter as more glyphs, rituals, and mixed-purpose spell chains are added.
 - Add explicit mana-source and mana-feed semantics so spells can declare whether they draw from self, ambient supply, stored sources, or continuous channels.
 - Add glyph vocabulary for `mana`, ambient/environment references, quantity/measure, and maintained channels so spells like `flare` and sustained wards can differentiate cleanly from `fireball`.
-- Fix the current item texture/resource path problems so placeholder art actually renders instead of missing-texture cubes.
 - Rework keyed lock lifecycle so unlocking with a matching key does not permanently discard the keyed lock state, and evaluate multi-lock entryways.
-- Remove the brief graphical open-state flicker when interacting with locked doors.
 - Deepen targeting resolution so low-cost healing is not effectively lay-on-hands and offensive spells can self-hit when cast into nearby geometry or at the caster's feet.
 - Replace the current rigid `stone_path` prototype rules with chain-driven span, length, and constructive-placement semantics.
 - Design bridge building as a multi-step interpreted construction process with glyph-resolvable steps for endpoints, line drawing, arc shaping, thickening, and execution.
+- Keep glyphs as partial pieces of interpreted commands rather than letting UI shortcuts or seeded prototype spells harden into one-glyph-one-spell assumptions.
+- Keep targeting, mana sourcing, construction span, and persistence behavior chain-driven instead of hiding those semantics behind named spell shortcuts.
 - Expand the generalized block pattern tag system beyond `MAGIC_LOCKED`, including seals, keyed runes, cursed bindings, and future entity-facing tags.
 - Decide which non-plant block families should become first-class tag targets beyond the current open/powered/extended/container heuristics.
 - Add lock strength / unlock resistance so physical and magical locks can diverge meaningfully later.

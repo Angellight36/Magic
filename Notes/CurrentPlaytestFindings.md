@@ -50,3 +50,13 @@ Each of those steps should eventually be expressible through glyphs or combinati
 - Glyphs are partial pieces of larger interpreted commands.
 - They should not be treated as one-to-one spell buttons.
 - Complex results like targeting, bridge shape, path length, or ward feeding should emerge from combining these partial pieces into a coherent instruction chain.
+
+## What may need to change to preserve that principle
+
+- The composer UI should keep presenting chains as assembled instructions, not as a thin skin over a spellbook of fixed outcomes.
+- Seeded prototype spells should stay examples and debugging shortcuts, not the source of truth for how magic is structured.
+- Targeting should come from reference, perception, delivery, and constraint glyph combinations rather than spell-specific fallback rules.
+- Mana sourcing should be made explicit in chains so supply decisions are not silently inferred from a spell label.
+- Construction behavior such as span, arc, thickness, elevation, and replacement-vs-creation should resolve from glyph structure instead of hidden constants.
+- Sustained effects like wards should depend on anchor, trigger, concentration, and feed semantics rather than one-off bespoke spell classes.
+- Similar effects like `fireball` and a future `flare` should diverge through differentiating glyph vocabulary and runtime parameters, not because they were manually assigned to unrelated canned spell slots.

@@ -7,12 +7,14 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 
 /**
  * Simple dev-build spell composer that lets players mash together glyph chains without typing chat commands.
@@ -76,31 +78,10 @@ public final class GlyphComposerScreen extends Screen {
     }
 
     private void renderChainPreview(GuiGraphics context, int left, int top) {
-        context.fill(left - 4, top - 4, left + 344, top + 38, 0xA30A1018);
-        List<String> glyphIds = GlyphComposerState.currentGlyphs();
-        if (glyphIds.isEmpty()) {
-            context.drawString(font, Component.literal("(empty)"), left, top + 12, 0x8DA2B8, false);
-            return;
-        }
-
-        int x = left;
-        int y = top;
-        int lineHeight = font.lineHeight + 6;
-        for (String glyphId : glyphIds) {
-            String label = glyphId.replace('_', ' ');
-            int chipWidth = font.width(label) + 10;
-            if (x + chipWidth > left + 340) {
-                x = left;
-                y += lineHeight;
-            }
-            if (y > top + lineHeight * 2) {
-                context.drawString(font, Component.literal("..."), x, y, 0x8DA2B8, false);
-                return;
-            }
-
-            context.fill(x - 2, y - 2, x + chipWidth, y + font.lineHeight + 2, 0xCC1D2A3A);
-            context.drawString(font, Component.literal(label), x + 3, y, 0xFFFFFF, false);
-            x += chipWidth + 4;
+        context.fill(left - 4, top - 4, left + 344, top + 50, 0xA30A1018);
+        List<FormattedCharSequence> wrappedPreview = font.split(Component.literal(currentChainPreviewText()), 336);
+        for (int index = 0; index < Math.min(4, wrappedPreview.size()); index++) {
+            context.drawString(font, wrappedPreview.get(index), left, top + index * (font.lineHeight + 2), 0xFFFFFF, false);
         }
     }
 
@@ -217,5 +198,20 @@ public final class GlyphComposerScreen extends Screen {
 
     private static String lastCastLabel() {
         return GlyphComposerState.hasLastCastChain() ? GlyphComposerState.lastCastChainText() : "(none)";
+    }
+
+    private static String currentChainPreviewText() {
+        if (!GlyphComposerState.hasCurrentChain()) {
+            return "(empty)";
+        }
+        return GlyphComposerState.currentGlyphs().stream()
+                .map(GlyphComposerScreen::previewGlyphLabel)
+                .reduce((left, right) -> left + " -> " + right)
+                .orElse("(empty)");
+    }
+
+    private static String previewGlyphLabel(String glyphId) {
+        Optional<GlyphDefinition> glyph = CoreGlyphRegistry.find(glyphId);
+        return glyph.map(GlyphDefinition::displayName).orElse(glyphId.replace('_', ' '));
     }
 }
