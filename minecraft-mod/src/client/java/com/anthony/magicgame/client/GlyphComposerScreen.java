@@ -23,6 +23,15 @@ public final class GlyphComposerScreen extends Screen {
     private static final int GLYPHS_PER_PAGE = 12;
     private static final int CHAIN_PREVIEW_WIDTH = 336;
     private static final int CHAIN_PREVIEW_HEIGHT = 32;
+    private static final int SCREEN_SCRIM_COLOR = 0xFF101010;
+    private static final int PANEL_COLOR = 0xFF002244;
+    private static final int PREVIEW_PANEL_COLOR = 0xFF000000;
+    private static final int TITLE_COLOR = 0xFFFFFF00;
+    private static final int INSTRUCTION_COLOR = 0xFFFF00FF;
+    private static final int SECTION_LABEL_COLOR = 0xFF00FFFF;
+    private static final int PREVIEW_TEXT_COLOR = 0xFFFFFFFF;
+    private static final int FOOTER_PRIMARY_COLOR = 0xFFFF6600;
+    private static final int FOOTER_SECONDARY_COLOR = 0xFF00FF00;
     private static final Map<GlyphCategory, List<GlyphDefinition>> GLYPHS_BY_CATEGORY = buildGlyphMap();
 
     private GlyphCategory selectedCategory = firstPopulatedCategory();
@@ -62,28 +71,28 @@ public final class GlyphComposerScreen extends Screen {
     public void render(GuiGraphics context, int mouseX, int mouseY, float partialTick) {
         int left = Math.max(16, width / 2 - 180);
         int top = 18;
-        context.fill(0, 0, width, height, 0xC010141A);
-        context.fill(left - 8, top - 8, left + 360, height - 18, 0xE0141C28);
+        context.fill(0, 0, width, height, SCREEN_SCRIM_COLOR);
+        context.fill(left - 8, top - 8, left + 360, height - 18, PANEL_COLOR);
 
         super.render(context, mouseX, mouseY, partialTick);
 
-        context.drawString(font, title, left, top, 0xFFFFFF, false);
-        context.drawString(font, Component.literal("Hold a Glyph Focus. Enter casts, Backspace removes, Delete clears."), left, top + 12, 0xBFD7E8, false);
+        context.drawString(font, title, left, top, TITLE_COLOR, false);
+        context.drawString(font, Component.literal("Hold a Glyph Focus. Enter casts, Backspace removes, Delete clears."), left, top + 12, INSTRUCTION_COLOR, false);
 
         int chainTop = top + 28;
-        context.drawString(font, Component.literal("Current Chain"), left, chainTop, 0xFFE8A3, false);
+        context.drawString(font, Component.literal("Current Chain"), left, chainTop, SECTION_LABEL_COLOR, false);
         renderChainPreview(context, left, chainTop + 12);
 
         int footerY = height - 54;
-        context.drawString(font, Component.literal("Last Quick-Cast: " + lastCastLabel()), left, footerY, 0xA7F3FF, false);
-        context.drawString(font, Component.literal("Category Page " + (page + 1) + "/" + Math.max(1, pageCount())), left, footerY + 12, 0x9FB2C7, false);
+        context.drawString(font, Component.literal("Last Quick-Cast: " + lastCastLabel()), left, footerY, FOOTER_PRIMARY_COLOR, false);
+        context.drawString(font, Component.literal("Category Page " + (page + 1) + "/" + Math.max(1, pageCount())), left, footerY + 12, FOOTER_SECONDARY_COLOR, false);
     }
 
     private void renderChainPreview(GuiGraphics context, int left, int top) {
-        context.fill(left - 4, top - 4, left + CHAIN_PREVIEW_WIDTH + 4, top + CHAIN_PREVIEW_HEIGHT, 0xA30A1018);
+        context.fill(left - 4, top - 4, left + CHAIN_PREVIEW_WIDTH + 4, top + CHAIN_PREVIEW_HEIGHT, PREVIEW_PANEL_COLOR);
         List<String> previewLines = currentChainPreviewLines(CHAIN_PREVIEW_WIDTH);
         for (int index = 0; index < Math.min(2, previewLines.size()); index++) {
-            context.drawString(font, previewLines.get(index), left, top + index * (font.lineHeight + 2), 0xFFFFFF, false);
+            context.drawString(font, previewLines.get(index), left, top + index * (font.lineHeight + 2), PREVIEW_TEXT_COLOR, false);
         }
     }
 
