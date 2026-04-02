@@ -1,14 +1,20 @@
 package com.anthony.magicgame.client;
 
+import com.anthony.magicgame.item.GlyphFocusItem;
 import com.anthony.magicgame.item.MagicItems;
+import com.anthony.magicgame.network.FocusGlyphChainPayload;
+import java.util.ArrayList;
+import java.util.List;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -36,16 +42,21 @@ public final class MagicCastingClientController {
     }
 
     public static boolean isHoldingFocus(LocalPlayer player) {
-        return player.getItemInHand(InteractionHand.MAIN_HAND).is(MagicItems.GLYPH_FOCUS)
-                || player.getItemInHand(InteractionHand.OFF_HAND).is(MagicItems.GLYPH_FOCUS);
+        return activeFocusHand(player) != null;
     }
 
     public static void castCurrentChain(Minecraft minecraft) {
-        sendSpellCommand(minecraft, "cast", GlyphComposerState.currentChainText(), true);
+        InteractionHand hand = activeFocusHand(minecraft.player);
+        if (hand != null) {
+            castCurrentChain(minecraft, hand);
+        }
     }
 
     public static void analyzeCurrentChain(Minecraft minecraft) {
-        sendSpellCommand(minecraft, "analyze", GlyphComposerState.currentChainText(), false);
+        InteractionHand hand = activeFocusHand(minecraft.player);
+        if (hand != null) {
+            analyzeCurrentChain(minecraft, hand);
+        }
     }
 
     private static void tick(Minecraft minecraft) {
@@ -58,46 +69,130 @@ public final class MagicCastingClientController {
     }
 
     private static void openComposer(Minecraft minecraft) {
-        if (!hasFocusReady(minecraft)) {
+        InteractionHand hand = activeFocusHand(minecraft.player);
+        if (!hasFocusReady(minecraft, hand)) {
             return;
         }
-        minecraft.setScreen(new GlyphComposerScreen());
+        minecraft.setScreen(new GlyphComposerScreen(hand));
     }
 
     private static void quickCastLast(Minecraft minecraft) {
-        if (!hasFocusReady(minecraft)) {
+        InteractionHand hand = activeFocusHand(minecraft.player);
+        if (!hasFocusReady(minecraft, hand)) {
             return;
         }
-        if (!GlyphComposerState.hasLastCastChain()) {
-            showActionBar(minecraft, "No composed spell is ready for quick-cast yet.");
+        List<String> glyphIds = storedGlyphs(minecraft, hand);
+        if (glyphIds.isEmpty()) {
+            showActionBar(minecraft, "Write at least one glyph onto this focus before quick-casting.");
             return;
         }
-        sendSpellCommand(minecraft, "cast", GlyphComposerState.lastCastChainText(), false);
+        sendSpellCommand(minecraft, hand, "cast", glyphIds, true);
     }
 
-    private static boolean hasFocusReady(Minecraft minecraft) {
+    public static void castCurrentChain(Minecraft minecraft, InteractionHand hand) {
+        sendSpellCommand(minecraft, hand, "cast", storedGlyphs(minecraft, hand), true);
+    }
+
+    public static void analyzeCurrentChain(Minecraft minecraft, InteractionHand hand) {
+        sendSpellCommand(minecraft, hand, "analyze", storedGlyphs(minecraft, hand), false);
+    }
+
+    public static List<String> storedGlyphs(Minecraft minecraft, InteractionHand hand) {
+        ItemStack stack = heldFocusStack(minecraft, hand);
+        if (stack.isEmpty()) {
+            return List.of();
+        }
+        return GlyphFocusItem.getStoredGlyphs(stack);
+    }
+
+    public static String storedChainText(Minecraft minecraft, InteractionHand hand) {
+        ItemStack stack = heldFocusStack(minecraft, hand);
+        return stack.isEmpty() ? "(focus missing)" : GlyphFocusItem.storedChainText(stack);
+    }
+
+    public static void appendGlyph(Minecraft minecraft, InteractionHand hand, String glyphId) {
+        List<String> glyphIds = new ArrayList<>(storedGlyphs(minecraft, hand));
+        glyphIds.add(glyphId);
+        updateStoredGlyphs(minecraft, hand, glyphIds);
+    }
+
+    public static void removeLastGlyph(Minecraft minecraft, InteractionHand hand) {
+        List<String> glyphIds = new ArrayList<>(storedGlyphs(minecraft, hand));
+        if (!glyphIds.isEmpty()) {
+            glyphIds.removeLast();
+            updateStoredGlyphs(minecraft, hand, glyphIds);
+        }
+    }
+
+    public static void clearGlyphs(Minecraft minecraft, InteractionHand hand) {
+        updateStoredGlyphs(minecraft, hand, List.of());
+    }
+
+    public static InteractionHand activeFocusHand(LocalPlayer player) {
+        if (player == null) {
+            return null;
+        }
+        if (player.getItemInHand(InteractionHand.MAIN_HAND).is(MagicItems.GLYPH_FOCUS)) {
+            return InteractionHand.MAIN_HAND;
+        }
+        if (player.getItemInHand(InteractionHand.OFF_HAND).is(MagicItems.GLYPH_FOCUS)) {
+            return InteractionHand.OFF_HAND;
+        }
+        return null;
+    }
+
+    private static boolean hasFocusReady(Minecraft minecraft, InteractionHand hand) {
         if (minecraft.player == null || minecraft.player.connection == null) {
             return false;
         }
-        if (!isHoldingFocus(minecraft.player)) {
+        if (hand == null || !minecraft.player.getItemInHand(hand).is(MagicItems.GLYPH_FOCUS)) {
             showActionBar(minecraft, "Hold a Glyph Focus to compose or quick-cast magic.");
             return false;
         }
         return true;
     }
 
-    private static void sendSpellCommand(Minecraft minecraft, String action, String glyphChain, boolean rememberAsLastCast) {
-        if (!hasFocusReady(minecraft)) {
-            return;
+    private static ItemStack heldFocusStack(Minecraft minecraft, InteractionHand hand) {
+        if (minecraft.player == null || hand == null) {
+            return ItemStack.EMPTY;
         }
-        if (glyphChain == null || glyphChain.isBlank()) {
-            showActionBar(minecraft, "Compose at least one glyph before sending the spell.");
+        ItemStack stack = minecraft.player.getItemInHand(hand);
+        return stack.is(MagicItems.GLYPH_FOCUS) ? stack : ItemStack.EMPTY;
+    }
+
+    private static void updateStoredGlyphs(Minecraft minecraft, InteractionHand hand, List<String> glyphIds) {
+        if (!hasFocusReady(minecraft, hand)) {
             return;
         }
 
+        ItemStack stack = heldFocusStack(minecraft, hand);
+        if (stack.isEmpty()) {
+            return;
+        }
+
+        GlyphFocusItem.setStoredGlyphs(stack, glyphIds);
+        ClientPlayNetworking.send(new FocusGlyphChainPayload(hand, glyphIds));
+    }
+
+    private static void sendSpellCommand(
+            Minecraft minecraft,
+            InteractionHand hand,
+            String action,
+            List<String> glyphIds,
+            boolean rememberAsLastCast
+    ) {
+        if (!hasFocusReady(minecraft, hand)) {
+            return;
+        }
+        if (glyphIds.isEmpty()) {
+            showActionBar(minecraft, "Write at least one glyph onto this focus before sending the spell.");
+            return;
+        }
+
+        String glyphChain = String.join(" ", glyphIds);
         minecraft.player.connection.sendCommand("magic " + action + " chain " + glyphChain);
         if (rememberAsLastCast) {
-            GlyphComposerState.rememberCurrentAsLastCast();
+            GlyphComposerState.rememberLastCast(glyphIds);
         }
     }
 

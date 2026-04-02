@@ -2,6 +2,8 @@ package com.anthony.magicgame.network;
 
 import com.anthony.magicgame.debug.MagicDebugFeature;
 import com.anthony.magicgame.debug.MagicDebugSettings;
+import com.anthony.magicgame.item.GlyphFocusItem;
+import com.anthony.magicgame.item.MagicItems;
 import com.anthony.magicgame.mana.ManaProfile;
 import com.anthony.magicgame.mana.PlayerManaManager;
 import com.anthony.magicgame.spell.pattern.BlockPatternTag;
@@ -13,6 +15,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Registers payload types and provides small helper methods for syncing prototype HUD state.
@@ -24,9 +27,12 @@ public final class MagicNetworking {
     }
 
     public static void register() {
+        PayloadTypeRegistry.playC2S().register(FocusGlyphChainPayload.ID, FocusGlyphChainPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(ManaHudPayload.ID, ManaHudPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(SpellFeedbackPayload.ID, SpellFeedbackPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(LockStatePayload.ID, LockStatePayload.CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(FocusGlyphChainPayload.ID, (payload, context) ->
+                applyFocusGlyphChain(context.player(), payload));
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             syncMana(handler.player);
             syncLockedBlocks(handler.player);
@@ -78,5 +84,15 @@ public final class MagicNetworking {
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             syncLockedBlocks(player);
         }
+    }
+
+    private static void applyFocusGlyphChain(ServerPlayer player, FocusGlyphChainPayload payload) {
+        ItemStack stack = player.getItemInHand(payload.hand());
+        if (!stack.is(MagicItems.GLYPH_FOCUS)) {
+            return;
+        }
+        GlyphFocusItem.setStoredGlyphs(stack, payload.glyphIds());
+        player.getInventory().setChanged();
+        player.containerMenu.broadcastChanges();
     }
 }

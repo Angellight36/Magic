@@ -221,6 +221,7 @@ Primary implementation:
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\ManaHudPayload.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\FocusGlyphChainPayload.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\LockStatePayload.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\SpellFeedbackPayload.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicClientNetworking.java`
@@ -232,10 +233,13 @@ Primary implementation:
 - A held `glyph_focus` item now acts as the current player-facing casting tool for current dev builds
 - `glyph_focus` is currently only one casting aid, not a universal lore rule for who can perform magic
 - Pressing `G` while holding the focus opens a client-side glyph composer
+- Each `glyph_focus` now stores one written glyph chain on the item itself instead of sharing one global draft across every focus.
 - The composer can append glyphs by category, analyze the current chain, cast it, remove the last glyph, or clear the chain
-- The composer now shows the current chain as readable wrapped glyph text while you build it and uses a neutral dark overlay instead of the earlier heavy blue tint
-- Pressing `R` while holding the focus quick-casts the last composed chain
+- The composer now shows the stored chain as readable wrapped glyph text and uses a temporary high-contrast color palette for readability.
+- The composer layout now treats preview, category row, glyph grid, controls, page label, and quick-cast readout as separate regions to reduce overlap.
+- Pressing `R` while holding the focus quick-casts the spell currently written onto that held focus
 - The composer currently reuses the existing `/magic analyze chain ...` and `/magic cast chain ...` server commands under the hood so the early gameplay loop does not fork the spell runtime yet
+- `Analyze` remains a temporary player-facing dev affordance in the composer and is not intended as a permanent final option.
 
 Primary implementation:
 
@@ -334,6 +338,7 @@ Primary implementation:
 ### 12. Tests currently in place
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\debug\MagicDebugSettingsTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\GlyphFocusItemTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\LinkedKeyItemTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\MagicItemResourceDefinitionTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainTest.java`

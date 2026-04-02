@@ -15,14 +15,17 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.InteractionHand;
 
 /**
  * Simple dev-build spell composer that lets players mash together glyph chains without typing chat commands.
  */
 public final class GlyphComposerScreen extends Screen {
     private static final int GLYPHS_PER_PAGE = 12;
-    private static final int CHAIN_PREVIEW_WIDTH = 336;
-    private static final int CHAIN_PREVIEW_HEIGHT = 32;
+    private static final int PANEL_WIDTH = 360;
+    private static final int PANEL_PADDING = 12;
+    private static final int CHAIN_PREVIEW_HEIGHT = 34;
+    private static final int CHAIN_PREVIEW_WIDTH = PANEL_WIDTH - PANEL_PADDING * 2;
     private static final int SCREEN_SCRIM_COLOR = 0xFF101010;
     private static final int PANEL_COLOR = 0xFF002244;
     private static final int PREVIEW_PANEL_COLOR = 0xFF000000;
@@ -32,13 +35,16 @@ public final class GlyphComposerScreen extends Screen {
     private static final int PREVIEW_TEXT_COLOR = 0xFFFFFFFF;
     private static final int FOOTER_PRIMARY_COLOR = 0xFFFF6600;
     private static final int FOOTER_SECONDARY_COLOR = 0xFF00FF00;
+    // TODO: Replace the temporary high-contrast composer colors with a deliberate final UI palette.
     private static final Map<GlyphCategory, List<GlyphDefinition>> GLYPHS_BY_CATEGORY = buildGlyphMap();
 
+    private final InteractionHand focusHand;
     private GlyphCategory selectedCategory = firstPopulatedCategory();
     private int page;
 
-    public GlyphComposerScreen() {
+    public GlyphComposerScreen(InteractionHand focusHand) {
         super(Component.literal("Glyph Composer"));
+        this.focusHand = focusHand;
     }
 
     @Override
@@ -50,17 +56,17 @@ public final class GlyphComposerScreen extends Screen {
     public boolean keyPressed(KeyEvent event) {
         int keyCode = event.key();
         if (keyCode == 257 || keyCode == 335) {
-            MagicCastingClientController.castCurrentChain(Minecraft.getInstance());
+            MagicCastingClientController.castCurrentChain(Minecraft.getInstance(), focusHand);
             onClose();
             return true;
         }
         if (keyCode == 259) {
-            GlyphComposerState.removeLastGlyph();
+            MagicCastingClientController.removeLastGlyph(Minecraft.getInstance(), focusHand);
             refreshComposerWidgets();
             return true;
         }
         if (keyCode == 261) {
-            GlyphComposerState.clearCurrentGlyphs();
+            MagicCastingClientController.clearGlyphs(Minecraft.getInstance(), focusHand);
             refreshComposerWidgets();
             return true;
         }
@@ -69,28 +75,43 @@ public final class GlyphComposerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float partialTick) {
-        int left = Math.max(16, width / 2 - 180);
+        int left = panelLeft();
+        int right = left + PANEL_WIDTH;
         int top = 18;
+        int bottom = panelBottom();
         context.fill(0, 0, width, height, SCREEN_SCRIM_COLOR);
-        context.fill(left - 8, top - 8, left + 360, height - 18, PANEL_COLOR);
+        context.fill(left - 8, top - 8, right, bottom, PANEL_COLOR);
 
         super.render(context, mouseX, mouseY, partialTick);
 
-        context.drawString(font, title, left, top, TITLE_COLOR, false);
-        context.drawString(font, Component.literal("Hold a Glyph Focus. Enter casts, Backspace removes, Delete clears."), left, top + 12, INSTRUCTION_COLOR, false);
+        int titleY = top;
+        int instructionsY = titleY + 12;
+        int previewTop = instructionsY + 18;
+        int footerX = Math.min(width - 180, right + 10);
+        int footerY = bottom - font.lineHeight - 6;
+        int pageLabelWidth = font.width("Category Page " + Math.max(1, page + 1) + "/" + Math.max(1, pageCount()));
 
-        int chainTop = top + 28;
-        context.drawString(font, Component.literal("Current Chain"), left, chainTop, SECTION_LABEL_COLOR, false);
-        renderChainPreview(context, left, chainTop + 12);
+        context.drawString(font, title, left, titleY, TITLE_COLOR, false);
+        context.drawString(font, Component.literal("Hold a Glyph Focus. Enter casts, Backspace removes, Delete clears."), left, instructionsY, INSTRUCTION_COLOR, false);
+        context.drawString(font, Component.literal("Written Spell"), left, previewTop - 10, SECTION_LABEL_COLOR, false);
+        renderChainPreview(context, left, previewTop);
 
-        int footerY = height - 54;
-        context.drawString(font, Component.literal("Last Quick-Cast: " + lastCastLabel()), left, footerY, FOOTER_PRIMARY_COLOR, false);
-        context.drawString(font, Component.literal("Category Page " + (page + 1) + "/" + Math.max(1, pageCount())), left, footerY + 12, FOOTER_SECONDARY_COLOR, false);
+        if (footerX > right) {
+            context.drawString(font, Component.literal("Last Quick-Cast: " + lastCastLabel()), footerX, footerY, FOOTER_PRIMARY_COLOR, false);
+        }
+        context.drawString(
+                font,
+                Component.literal("Category Page " + (page + 1) + "/" + Math.max(1, pageCount())),
+                right - PANEL_PADDING - pageLabelWidth,
+                bottom - font.lineHeight - 6,
+                FOOTER_SECONDARY_COLOR,
+                false
+        );
     }
 
     private void renderChainPreview(GuiGraphics context, int left, int top) {
         context.fill(left - 4, top - 4, left + CHAIN_PREVIEW_WIDTH + 4, top + CHAIN_PREVIEW_HEIGHT, PREVIEW_PANEL_COLOR);
-        List<String> previewLines = currentChainPreviewLines(CHAIN_PREVIEW_WIDTH);
+        List<String> previewLines = currentChainPreviewLines(Minecraft.getInstance(), CHAIN_PREVIEW_WIDTH);
         for (int index = 0; index < Math.min(2, previewLines.size()); index++) {
             context.drawString(font, previewLines.get(index), left, top + index * (font.lineHeight + 2), PREVIEW_TEXT_COLOR, false);
         }
@@ -99,7 +120,7 @@ public final class GlyphComposerScreen extends Screen {
     private void refreshComposerWidgets() {
         clearWidgets();
 
-        int left = Math.max(16, width / 2 - 180);
+        int left = panelLeft();
         int top = 94;
         int categoryWidth = 68;
         int categoryHeight = 20;
@@ -132,29 +153,29 @@ public final class GlyphComposerScreen extends Screen {
             int x = left + column * (buttonWidth + gap);
             int y = gridTop + row * (buttonHeight + gap);
             addRenderableWidget(Button.builder(Component.literal(glyph.displayName()), button -> {
-                GlyphComposerState.appendGlyph(glyph.id());
+                MagicCastingClientController.appendGlyph(Minecraft.getInstance(), focusHand, glyph.id());
                 refreshComposerWidgets();
             }).bounds(x, y, buttonWidth, buttonHeight).build());
         }
 
-        int controlsTop = height - 84;
+        int controlsTop = panelBottom() - 66;
         addRenderableWidget(Button.builder(Component.literal("Analyze"), button -> {
-            MagicCastingClientController.analyzeCurrentChain(Minecraft.getInstance());
+            MagicCastingClientController.analyzeCurrentChain(Minecraft.getInstance(), focusHand);
         }).bounds(left, controlsTop, 84, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Cast"), button -> {
-            MagicCastingClientController.castCurrentChain(Minecraft.getInstance());
+            MagicCastingClientController.castCurrentChain(Minecraft.getInstance(), focusHand);
             onClose();
         }).bounds(left + 90, controlsTop, 84, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Backspace"), button -> {
-            GlyphComposerState.removeLastGlyph();
+            MagicCastingClientController.removeLastGlyph(Minecraft.getInstance(), focusHand);
             refreshComposerWidgets();
         }).bounds(left + 180, controlsTop, 84, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Clear"), button -> {
-            GlyphComposerState.clearCurrentGlyphs();
+            MagicCastingClientController.clearGlyphs(Minecraft.getInstance(), focusHand);
             refreshComposerWidgets();
         }).bounds(left + 270, controlsTop, 84, 20).build());
 
-        int pagingTop = controlsTop + 24;
+        int pagingTop = panelBottom() - 42;
         addRenderableWidget(Button.builder(Component.literal("< Prev"), button -> {
             page = Math.max(0, page - 1);
             refreshComposerWidgets();
@@ -211,14 +232,14 @@ public final class GlyphComposerScreen extends Screen {
         return GlyphComposerState.hasLastCastChain() ? GlyphComposerState.lastCastChainText() : "(none)";
     }
 
-    private List<String> currentChainPreviewLines(int maxWidth) {
-        if (!GlyphComposerState.hasCurrentChain()) {
-            return List.of("(empty)");
-        }
-
+    private List<String> currentChainPreviewLines(Minecraft minecraft, int maxWidth) {
         List<String> lines = new ArrayList<>();
         StringBuilder currentLine = new StringBuilder();
-        for (String glyphId : GlyphComposerState.currentGlyphs()) {
+        List<String> glyphIds = MagicCastingClientController.storedGlyphs(minecraft, focusHand);
+        if (glyphIds.isEmpty()) {
+            return List.of("(empty)");
+        }
+        for (String glyphId : glyphIds) {
             String glyphLabel = previewGlyphLabel(glyphId);
             String candidate = currentLine.isEmpty() ? glyphLabel : currentLine + " -> " + glyphLabel;
             if (!currentLine.isEmpty() && font.width(candidate) > maxWidth) {
@@ -237,5 +258,13 @@ public final class GlyphComposerScreen extends Screen {
     private static String previewGlyphLabel(String glyphId) {
         Optional<GlyphDefinition> glyph = CoreGlyphRegistry.find(glyphId);
         return glyph.map(GlyphDefinition::displayName).orElse(glyphId.replace('_', ' '));
+    }
+
+    private int panelLeft() {
+        return Math.max(16, width / 2 - 180);
+    }
+
+    private int panelBottom() {
+        return height - 18;
     }
 }

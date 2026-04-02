@@ -5,16 +5,27 @@ This note captures the current direction for foci, concentration, spell differen
 ## Glyph focus is not the same thing as "permission to cast"
 
 - `glyph_focus` should be treated as one current player-facing casting aid, not the universal prerequisite for magic.
+- `glyph_focus` currently also acts as a written spell carrier, with one stored chain per focus in the current dev build.
 - Different magical beings may not need a focus at all.
 - Some beings may cast innately.
 - Some beings may use body parts, runes, voices, or environmental attunement instead of a handheld focus.
 - A focus should eventually provide advantages beyond merely enabling the UI:
   - stabilization
+  - written spell storage
   - storage
   - shorthand support
   - safer targeting
   - mana shaping or buffering
   - improved recall of known chains
+
+## Written spells versus remembered shorthand
+
+- The current focus direction is that players are writing spells down because directly remembering every chain should be hard.
+- Each `glyph_focus` should carry its own stored spell rather than sharing one global draft across all foci.
+- This written-storage model should stay distinct from a future memorized shorthand model.
+- A future shorthand system can let players bind frequently used glyphs or fragments to a small fixed input set, such as roughly ten quick-access keys.
+- That future memory system should help assemble spells on the fly, not replace the role of written foci entirely.
+- A later scroll system can derive from this written-spell model by turning a composed focus spell into a more permanent reusable carrier with reduced risk of accidental edits.
 
 ## Concentration should become a second limiting axis
 

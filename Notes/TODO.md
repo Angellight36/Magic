@@ -17,6 +17,10 @@
 - Treat `glyph_focus` as one casting aid rather than a universal prerequisite, and design future non-focus casters accordingly.
 - Add concentration as a second major limiter alongside mana for active complexity and sustained spell upkeep.
 - Evolve the current `glyph_focus` composer into the longer-term input model, including timed glyph registration and more direct hotkey casting.
+- Replace the current temporary high-contrast composer colors with a deliberate final UI palette once the composer layout settles.
+- Remove `Analyze` from the player-facing composer once we have better diegetic spell feedback and less reliance on debug tooling.
+- Add a memorized quick-glyph or quick-fragment system for frequently used glyphs, likely using a small fixed key set rather than replacing written foci.
+- Add scroll-style reusable written spell carriers so stored focus spells can later be copied into more stable reusable forms.
 - Build visible world interactions on top of the anchored effect framework, including magical scars and richer ward behavior.
 - Keep tuning the weighted interpreter as more glyphs, rituals, and mixed-purpose spell chains are added.
 - Add explicit mana-source and mana-feed semantics so spells can declare whether they draw from self, ambient supply, stored sources, or continuous channels.

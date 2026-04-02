@@ -1,46 +1,23 @@
 package com.anthony.magicgame.client;
 
+import com.anthony.magicgame.spell.GlyphDefinition;
+import com.anthony.magicgame.spell.registry.CoreGlyphRegistry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
- * Stores the current and last-composed glyph chains on the client so the early composer and quick-cast loop share one state.
+ * Stores lightweight client-only composer state that does not belong on the held focus item itself.
  */
 public final class GlyphComposerState {
-    private static final List<String> currentGlyphs = new ArrayList<>();
     private static List<String> lastCastGlyphs = List.of();
 
     private GlyphComposerState() {
     }
 
-    public static void appendGlyph(String glyphId) {
-        currentGlyphs.add(glyphId);
-    }
-
-    public static void removeLastGlyph() {
-        if (!currentGlyphs.isEmpty()) {
-            currentGlyphs.removeLast();
-        }
-    }
-
-    public static void clearCurrentGlyphs() {
-        currentGlyphs.clear();
-    }
-
-    public static List<String> currentGlyphs() {
-        return List.copyOf(currentGlyphs);
-    }
-
-    public static String currentChainText() {
-        return String.join(" ", currentGlyphs);
-    }
-
-    public static boolean hasCurrentChain() {
-        return !currentGlyphs.isEmpty();
-    }
-
-    public static void rememberCurrentAsLastCast() {
-        lastCastGlyphs = List.copyOf(currentGlyphs);
+    public static void rememberLastCast(List<String> glyphIds) {
+        lastCastGlyphs = List.copyOf(glyphIds);
     }
 
     public static boolean hasLastCastChain() {
@@ -48,6 +25,13 @@ public final class GlyphComposerState {
     }
 
     public static String lastCastChainText() {
-        return String.join(" ", lastCastGlyphs);
+        return lastCastGlyphs.stream()
+                .map(GlyphComposerState::displayGlyphLabel)
+                .collect(Collectors.joining(" -> "));
+    }
+
+    private static String displayGlyphLabel(String glyphId) {
+        Optional<GlyphDefinition> glyph = CoreGlyphRegistry.find(glyphId);
+        return glyph.map(GlyphDefinition::displayName).orElse(glyphId.replace('_', ' '));
     }
 }
