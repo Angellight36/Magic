@@ -57,11 +57,12 @@ public final class GlyphComposerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float partialTick) {
-        renderBackground(context, mouseX, mouseY, partialTick);
+        renderTransparentBackground(context);
         super.render(context, mouseX, mouseY, partialTick);
 
         int left = Math.max(16, width / 2 - 180);
         int top = 18;
+        context.fill(left - 8, top - 8, left + 360, height - 18, 0xAA08111F);
         context.drawString(font, title, left, top, 0xFFFFFF, false);
         context.drawString(font, Component.literal("Hold a Glyph Focus. Enter casts, Backspace removes, Delete clears."), left, top + 12, 0xB8D8FF, false);
 
