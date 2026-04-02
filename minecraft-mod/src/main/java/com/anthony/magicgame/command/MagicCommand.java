@@ -4,12 +4,19 @@ import com.anthony.magicgame.debug.MagicDebugFeature;
 import com.anthony.magicgame.debug.MagicDebugSettings;
 import com.anthony.magicgame.mana.ManaProfile;
 import com.anthony.magicgame.mana.PlayerManaManager;
+import com.anthony.magicgame.network.MagicNetworking;
+import com.anthony.magicgame.spell.GlyphCategory;
+import com.anthony.magicgame.spell.GlyphDefinition;
 import com.anthony.magicgame.spell.PrototypeSpellDefinition;
+import com.anthony.magicgame.spell.SpellChain;
+import com.anthony.magicgame.spell.SpellChainParser;
+import com.anthony.magicgame.spell.SpellIntent;
 import com.anthony.magicgame.spell.SpellResolutionPlan;
 import com.anthony.magicgame.spell.SpellResolver;
 import com.anthony.magicgame.spell.effect.AnchoredEffectInstance;
 import com.anthony.magicgame.spell.effect.AnchoredEffectKind;
 import com.anthony.magicgame.spell.effect.AnchoredEffectManager;
+import com.anthony.magicgame.spell.registry.CoreGlyphRegistry;
 import com.anthony.magicgame.spell.registry.PrototypeSpellRegistry;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -18,17 +25,32 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.hurtingprojectile.LargeFireball;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -37,6 +59,7 @@ import net.minecraft.world.phys.Vec3;
 public final class MagicCommand {
     private static final int DEFAULT_ANCHOR_RADIUS = 6;
     private static final int DEFAULT_ANCHOR_DURATION_SECONDS = 180;
+    private static final String CUSTOM_GLYPHS_ARGUMENT = "glyphs";
 
     private MagicCommand() {
     }
@@ -46,7 +69,18 @@ public final class MagicCommand {
                 Commands.literal("magic")
                         .executes(MagicCommand::showStatus)
                         .then(Commands.literal("status").executes(MagicCommand::showStatus))
+                        .then(Commands.literal("glyphs").executes(MagicCommand::listGlyphs))
+                        .then(Commands.literal("analyze")
+                                .then(Commands.literal("chain")
+                                        .then(Commands.argument(CUSTOM_GLYPHS_ARGUMENT, StringArgumentType.greedyString())
+                                                .executes(MagicCommand::analyzeCustomChain)))
+                                .then(Commands.argument("spell", StringArgumentType.word())
+                                        .suggests((context, builder) -> suggestSpells(builder))
+                                        .executes(MagicCommand::analyzeSpell)))
                         .then(Commands.literal("cast")
+                                .then(Commands.literal("chain")
+                                        .then(Commands.argument(CUSTOM_GLYPHS_ARGUMENT, StringArgumentType.greedyString())
+                                                .executes(MagicCommand::castCustomChain)))
                                 .then(Commands.argument("spell", StringArgumentType.word())
                                         .suggests((context, builder) -> suggestSpells(builder))
                                         .executes(MagicCommand::castSpell)))
@@ -101,92 +135,141 @@ public final class MagicCommand {
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int castSpell(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
-        ServerPlayer player = requirePlayer(context);
-        String spellId = StringArgumentType.getString(context, "spell").toLowerCase(Locale.ROOT);
-        PrototypeSpellDefinition definition = PrototypeSpellRegistry.require(spellId);
-        SpellResolutionPlan plan = SpellResolver.resolve(definition);
-        MagicDebugSettings debugSettings = MagicDebugSettings.get(context.getSource().getServer());
-        PlayerManaManager manaManager = PlayerManaManager.get(context.getSource().getServer());
-        ManaProfile mana = manaManager.getOrCreate(player.getUUID());
+    private static int listGlyphs(CommandContext<CommandSourceStack> context) {
+        Map<GlyphCategory, List<GlyphDefinition>> glyphsByCategory = CoreGlyphRegistry.all().stream()
+                .sorted(Comparator.comparing(GlyphDefinition::id))
+                .collect(java.util.stream.Collectors.groupingBy(
+                        GlyphDefinition::category,
+                        java.util.LinkedHashMap::new,
+                        java.util.stream.Collectors.toList()
+                ));
 
-        if (!mana.trySpend(plan.manaCost())) {
-            context.getSource().sendFailure(Component.literal(
-                    "Not enough mana for " + definition.displayName() + ". Need " + plan.manaCost()
-                            + ", have " + mana.currentMana() + "."
-            ));
-            return 0;
-        }
-
-        manaManager.setDirty();
-        context.getSource().sendSuccess(() -> Component.literal(
-                definition.displayName() + " resolved as " + plan.intent()
-                        + " using " + plan.primaryDomain()
-                        + ". Cost " + plan.manaCost()
-                        + ", stability " + plan.stabilityScore()
-                        + ". Mana now " + mana.currentMana() + "/" + mana.maxMana() + "."
-        ), false);
-
-        if (!plan.warnings().isEmpty()) {
+        context.getSource().sendSuccess(() -> Component.literal("Prototype glyphs: " + CoreGlyphRegistry.size()), false);
+        for (Map.Entry<GlyphCategory, List<GlyphDefinition>> entry : glyphsByCategory.entrySet()) {
+            String glyphs = entry.getValue().stream()
+                    .map(GlyphDefinition::id)
+                    .reduce((left, right) -> left + ", " + right)
+                    .orElse("(none)");
             context.getSource().sendSuccess(() -> Component.literal(
-                    "Warnings: " + String.join(" | ", plan.warnings())
-            ), false);
-        }
-        if (spellId.equals("fireball") && debugSettings.isFeatureActive(MagicDebugFeature.FIREBALL_VISUALS)) {
-            spawnDebugFireball(player, context.getSource().getLevel());
-            context.getSource().sendSuccess(() -> Component.literal(
-                    "[debug] Spawned vanilla LargeFireball placeholder for fireball testing."
+                    "- " + entry.getKey() + ": " + glyphs
             ), false);
         }
         return Command.SINGLE_SUCCESS;
     }
 
+    private static int analyzeSpell(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        try {
+            String spellId = StringArgumentType.getString(context, "spell").toLowerCase(Locale.ROOT);
+            PrototypeSpellDefinition definition = PrototypeSpellRegistry.require(spellId);
+            SpellChain spell = SpellChainParser.parse(String.join(" ", definition.glyphIds()));
+            SpellResolutionPlan plan = SpellResolver.resolve(spell);
+            showPlan(context.getSource(), definition.displayName(), spell, plan);
+            maybeSendSpellFeedback(context.getSource().getServer(), requirePlayer(context), "Analyzed " + definition.displayName(), summarizePlan(plan));
+            return Command.SINGLE_SUCCESS;
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal(exception.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int analyzeCustomChain(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = requirePlayer(context);
+        try {
+            SpellChain spell = parseCustomChain(context);
+            SpellResolutionPlan plan = SpellResolver.resolve(spell);
+            showPlan(context.getSource(), "Custom Chain", spell, plan);
+            maybeSendSpellFeedback(context.getSource().getServer(), player, "Analyzed Custom Chain", summarizePlan(plan));
+            return Command.SINGLE_SUCCESS;
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal(exception.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int castSpell(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = requirePlayer(context);
+        try {
+            String spellId = StringArgumentType.getString(context, "spell").toLowerCase(Locale.ROOT);
+            PrototypeSpellDefinition definition = PrototypeSpellRegistry.require(spellId);
+            SpellChain spell = SpellChainParser.parse(String.join(" ", definition.glyphIds()));
+            SpellResolutionPlan plan = SpellResolver.resolve(spell);
+            return castResolvedSpell(context, player, definition.displayName(), spell, plan);
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal(exception.getMessage()));
+            return 0;
+        }
+    }
+
+    private static int castCustomChain(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
+        ServerPlayer player = requirePlayer(context);
+        try {
+            SpellChain spell = parseCustomChain(context);
+            SpellResolutionPlan plan = SpellResolver.resolve(spell);
+            return castResolvedSpell(context, player, "Custom Chain", spell, plan);
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal(exception.getMessage()));
+            return 0;
+        }
+    }
+
     private static int anchorSpell(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
         ServerPlayer player = requirePlayer(context);
-        String spellId = StringArgumentType.getString(context, "spell").toLowerCase(Locale.ROOT);
-        if (!spellId.equals("alert_ward")) {
-            context.getSource().sendFailure(Component.literal(
-                    "Only alert_ward can be anchored in the current prototype."
-            ));
+        try {
+            String spellId = StringArgumentType.getString(context, "spell").toLowerCase(Locale.ROOT);
+            if (!spellId.equals("alert_ward")) {
+                context.getSource().sendFailure(Component.literal(
+                        "Only alert_ward can be anchored in the current prototype."
+                ));
+                return 0;
+            }
+            AnchoredEffectKind kind = AnchoredEffectKind.ALERT_WARD;
+
+            int radius = readOptionalInt(context, "radius", DEFAULT_ANCHOR_RADIUS);
+            int durationSeconds = readOptionalInt(context, "duration_seconds", DEFAULT_ANCHOR_DURATION_SECONDS);
+            SpellResolutionPlan plan = SpellResolver.resolve(PrototypeSpellRegistry.require(spellId));
+            PlayerManaManager manaManager = PlayerManaManager.get(context.getSource().getServer());
+            ManaProfile mana = manaManager.getOrCreate(player.getUUID());
+            if (!mana.trySpend(plan.manaCost())) {
+                context.getSource().sendFailure(Component.literal(
+                        "Not enough mana to anchor " + spellId + ". Need " + plan.manaCost()
+                                + ", have " + mana.currentMana() + "."
+                ));
+                return 0;
+            }
+
+            ServerLevel level = context.getSource().getLevel();
+            AnchoredEffectInstance effect = AnchoredEffectInstance.create(
+                    kind,
+                    player.getUUID(),
+                    spellId,
+                    level.dimension().identifier().toString(),
+                    player.blockPosition().getX(),
+                    player.blockPosition().getY(),
+                    player.blockPosition().getZ(),
+                    radius,
+                    durationSeconds * 20
+            );
+
+            AnchoredEffectManager effectManager = AnchoredEffectManager.get(context.getSource().getServer());
+            effectManager.addEffect(effect);
+            manaManager.setDirty();
+            MagicNetworking.syncMana(player, mana);
+            context.getSource().sendSuccess(() -> Component.literal(
+                    "Anchored " + spellId + " at " + formatPosition(effect)
+                            + " with radius " + radius
+                            + " for " + durationSeconds + " seconds. Mana now " + mana.currentMana() + "/" + mana.maxMana() + "."
+            ), true);
+            maybeSendSpellFeedback(
+                    context.getSource().getServer(),
+                    player,
+                    "Anchored Alert Ward",
+                    "Radius " + radius + " | Duration " + durationSeconds + "s"
+            );
+            return Command.SINGLE_SUCCESS;
+        } catch (IllegalArgumentException exception) {
+            context.getSource().sendFailure(Component.literal(exception.getMessage()));
             return 0;
         }
-        AnchoredEffectKind kind = AnchoredEffectKind.ALERT_WARD;
-
-        int radius = readOptionalInt(context, "radius", DEFAULT_ANCHOR_RADIUS);
-        int durationSeconds = readOptionalInt(context, "duration_seconds", DEFAULT_ANCHOR_DURATION_SECONDS);
-        SpellResolutionPlan plan = SpellResolver.resolve(PrototypeSpellRegistry.require(spellId));
-        PlayerManaManager manaManager = PlayerManaManager.get(context.getSource().getServer());
-        ManaProfile mana = manaManager.getOrCreate(player.getUUID());
-        if (!mana.trySpend(plan.manaCost())) {
-            context.getSource().sendFailure(Component.literal(
-                    "Not enough mana to anchor " + spellId + ". Need " + plan.manaCost()
-                            + ", have " + mana.currentMana() + "."
-            ));
-            return 0;
-        }
-
-        ServerLevel level = context.getSource().getLevel();
-        AnchoredEffectInstance effect = AnchoredEffectInstance.create(
-                kind,
-                player.getUUID(),
-                spellId,
-                level.dimension().identifier().toString(),
-                player.blockPosition().getX(),
-                player.blockPosition().getY(),
-                player.blockPosition().getZ(),
-                radius,
-                durationSeconds * 20
-        );
-
-        AnchoredEffectManager effectManager = AnchoredEffectManager.get(context.getSource().getServer());
-        effectManager.addEffect(effect);
-        manaManager.setDirty();
-        context.getSource().sendSuccess(() -> Component.literal(
-                "Anchored " + spellId + " at " + formatPosition(effect)
-                        + " with radius " + radius
-                        + " for " + durationSeconds + " seconds. Mana now " + mana.currentMana() + "/" + mana.maxMana() + "."
-        ), true);
-        return Command.SINGLE_SUCCESS;
     }
 
     private static int listAnchors(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -222,6 +305,7 @@ public final class MagicCommand {
         ManaProfile mana = manaManager.getOrCreate(player.getUUID());
         mana.restoreToFull();
         manaManager.setDirty();
+        MagicNetworking.syncMana(player, mana);
         context.getSource().sendSuccess(() -> Component.literal("Mana refilled to " + mana.maxMana() + "."), true);
         return Command.SINGLE_SUCCESS;
     }
@@ -233,6 +317,7 @@ public final class MagicCommand {
         ManaProfile mana = manaManager.getOrCreate(player.getUUID());
         mana.setCurrentMana(amount);
         manaManager.setDirty();
+        MagicNetworking.syncMana(player, mana);
         context.getSource().sendSuccess(() -> Component.literal(
                 "Mana set to " + mana.currentMana() + "/" + mana.maxMana() + "."
         ), true);
@@ -255,8 +340,10 @@ public final class MagicCommand {
 
     private static int setDebugEnabled(CommandContext<CommandSourceStack> context) {
         boolean enabled = BoolArgumentType.getBool(context, "enabled");
-        MagicDebugSettings settings = MagicDebugSettings.get(context.getSource().getServer());
+        var server = context.getSource().getServer();
+        MagicDebugSettings settings = MagicDebugSettings.get(server);
         settings.setEnabled(enabled);
+        MagicNetworking.syncManaForAll(server);
         context.getSource().sendSuccess(() -> Component.literal("Debug global set to " + enabled + "."), true);
         return Command.SINGLE_SUCCESS;
     }
@@ -272,8 +359,10 @@ public final class MagicCommand {
             return 0;
         }
 
-        MagicDebugSettings settings = MagicDebugSettings.get(context.getSource().getServer());
+        var server = context.getSource().getServer();
+        MagicDebugSettings settings = MagicDebugSettings.get(server);
         settings.setFeatureEnabled(feature, enabled);
+        MagicNetworking.syncManaForAll(server);
         context.getSource().sendSuccess(() -> Component.literal(
                 "Debug feature " + feature.id() + " set to " + enabled + "."
         ), true);
@@ -296,6 +385,86 @@ public final class MagicCommand {
         return context.getSource().getPlayerOrException();
     }
 
+    private static SpellChain parseCustomChain(CommandContext<CommandSourceStack> context) {
+        return SpellChainParser.parse(StringArgumentType.getString(context, CUSTOM_GLYPHS_ARGUMENT));
+    }
+
+    private static int castResolvedSpell(
+            CommandContext<CommandSourceStack> context,
+            ServerPlayer player,
+            String label,
+            SpellChain spell,
+            SpellResolutionPlan plan
+    ) {
+        PlayerManaManager manaManager = PlayerManaManager.get(context.getSource().getServer());
+        ManaProfile mana = manaManager.getOrCreate(player.getUUID());
+        if (!mana.trySpend(plan.manaCost())) {
+            context.getSource().sendFailure(Component.literal(
+                    "Not enough mana for " + label + ". Need " + plan.manaCost()
+                            + ", have " + mana.currentMana() + "."
+            ));
+            return 0;
+        }
+
+        manaManager.setDirty();
+        MagicNetworking.syncMana(player, mana);
+        showCastResult(context.getSource(), label, plan, mana);
+        showWarnings(context.getSource(), plan);
+        runPrototypeEffects(player, context.getSource().getLevel(), spell, plan);
+        maybeSendSpellFeedback(context.getSource().getServer(), player, "Cast " + label, summarizePlan(plan));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static void showPlan(CommandSourceStack source, String label, SpellChain spell, SpellResolutionPlan plan) {
+        source.sendSuccess(() -> Component.literal(
+                label + " -> " + summarizePlan(plan)
+        ), false);
+        source.sendSuccess(() -> Component.literal(
+                "Glyphs: " + spell.glyphs().stream().map(GlyphDefinition::id).reduce((left, right) -> left + " -> " + right).orElse("(none)")
+        ), false);
+        source.sendSuccess(() -> Component.literal(
+                "Traits: " + plan.interpretedSpell().traits().stream()
+                        .map(Enum::name)
+                        .sorted()
+                        .reduce((left, right) -> left + ", " + right)
+                        .orElse("(none)")
+        ), false);
+        showWarnings(source, plan);
+    }
+
+    private static void showCastResult(CommandSourceStack source, String label, SpellResolutionPlan plan, ManaProfile mana) {
+        source.sendSuccess(() -> Component.literal(
+                label + " resolved as " + plan.intent()
+                        + " using " + plan.primaryDomain()
+                        + ". Cost " + plan.manaCost()
+                        + ", stability " + plan.stabilityScore()
+                        + ", confidence " + plan.confidenceScore()
+                        + ". Mana now " + mana.currentMana() + "/" + mana.maxMana() + "."
+        ), false);
+    }
+
+    private static void showWarnings(CommandSourceStack source, SpellResolutionPlan plan) {
+        if (!plan.warnings().isEmpty()) {
+            source.sendSuccess(() -> Component.literal(
+                    "Warnings: " + String.join(" | ", plan.warnings())
+            ), false);
+        }
+    }
+
+    private static void maybeSendSpellFeedback(net.minecraft.server.MinecraftServer server, ServerPlayer player, String title, String detail) {
+        MagicDebugSettings settings = MagicDebugSettings.get(server);
+        if (settings.isFeatureActive(MagicDebugFeature.SPELL_FEEDBACK_TEXT)) {
+            MagicNetworking.sendSpellFeedback(player, title, detail);
+        }
+    }
+
+    private static String summarizePlan(SpellResolutionPlan plan) {
+        return plan.intent() + " | " + plan.primaryDomain()
+                + " | Cost " + plan.manaCost()
+                + " | Stability " + plan.stabilityScore()
+                + " | Confidence " + plan.confidenceScore();
+    }
+
     private static int readOptionalInt(CommandContext<CommandSourceStack> context, String name, int fallback) {
         try {
             return IntegerArgumentType.getInteger(context, name);
@@ -308,10 +477,345 @@ public final class MagicCommand {
         return effect.x() + ", " + effect.y() + ", " + effect.z();
     }
 
+    private static void runPrototypeEffects(
+            ServerPlayer player,
+            ServerLevel level,
+            SpellChain spell,
+            SpellResolutionPlan plan
+    ) {
+        switch (plan.intent()) {
+            case TRAVELING_EFFECT -> runTravelingEffect(player, level, spell);
+            case RESTORATION_EFFECT -> runRestorationEffect(player, level, spell);
+            case VITALITY_TRANSFER -> runVitalityTransfer(player, level, spell);
+            case PATTERN_INTERACTION -> runPatternInteraction(player, level, spell);
+            case CONSTRUCTION_EFFECT -> runConstructionEffect(player, level, spell);
+            case BOUNDARY_WARD, UNKNOWN_UNSTABLE -> {
+                // Anchored and unstable prototype effects do not cast directly here yet.
+            }
+        }
+    }
+
+    private static void runTravelingEffect(ServerPlayer player, ServerLevel level, SpellChain spell) {
+        MagicDebugSettings debugSettings = MagicDebugSettings.get(player.level().getServer());
+        boolean containsFire = hasGlyph(spell, "fire");
+        boolean containsForce = hasGlyph(spell, "force");
+
+        if (containsFire && debugSettings.isFeatureActive(MagicDebugFeature.FIREBALL_VISUALS)) {
+            spawnDebugFireball(player, level);
+            if (debugSettings.isFeatureActive(MagicDebugFeature.FIREBALL_TRAIL_PARTICLES)) {
+                spawnFireballTrailParticles(player, level);
+            }
+            if (debugSettings.isFeatureActive(MagicDebugFeature.FIREBALL_LAUNCH_SOUND)) {
+                level.playSound(
+                        null,
+                        player.getX(),
+                        player.getY(),
+                        player.getZ(),
+                        SoundEvents.BLAZE_SHOOT,
+                        SoundSource.PLAYERS,
+                        1.0F,
+                        0.9F
+                );
+            }
+            player.sendSystemMessage(Component.literal(
+                    "[debug] Spawned vanilla LargeFireball placeholder for fireball testing."
+            ));
+            return;
+        }
+
+        if (containsForce) {
+            LivingEntity target = findLivingTargetInLook(player, level, 10.0D);
+            if (target != null) {
+                Vec3 look = player.getLookAngle().normalize();
+                target.hurt(level.damageSources().magic(), 4.0F);
+                target.push(look.x * 1.4D, 0.35D, look.z * 1.4D);
+                level.sendParticles(ParticleTypes.CLOUD, target.getX(), target.getY(0.5D), target.getZ(), 12, 0.3D, 0.4D, 0.3D, 0.03D);
+                level.sendParticles(ParticleTypes.CRIT, target.getX(), target.getY(0.5D), target.getZ(), 8, 0.25D, 0.3D, 0.25D, 0.02D);
+                level.playSound(null, target.blockPosition(), SoundEvents.PLAYER_ATTACK_KNOCKBACK, SoundSource.PLAYERS, 1.0F, 0.9F);
+                player.sendSystemMessage(Component.literal(
+                        "[debug] Force bolt struck " + target.getName().getString() + "."
+                ));
+            } else {
+                spawnForcePulseParticles(player, level);
+                player.sendSystemMessage(Component.literal(
+                        "[debug] Force bolt discharged without a living target."
+                ));
+            }
+        }
+    }
+
+    private static void runRestorationEffect(ServerPlayer player, ServerLevel level, SpellChain spell) {
+        LivingEntity target = resolveRestorationTarget(player, level, spell);
+        if (target == null) {
+            player.sendSystemMessage(Component.literal(
+                    "[debug] Restoration spell found no clear living target."
+            ));
+            return;
+        }
+
+        float healAmount = 4.0F;
+        if (hasGlyph(spell, "restore")) {
+            healAmount += 2.0F;
+        }
+        if (hasGlyph(spell, "strengthen")) {
+            healAmount += 1.0F;
+        }
+        if (hasGlyph(spell, "refine")) {
+            healAmount += 1.0F;
+        }
+
+        target.heal(healAmount);
+        if (hasGlyph(spell, "sustain") || hasGlyph(spell, "persist")) {
+            target.addEffect(new MobEffectInstance(MobEffects.REGENERATION, 100, 0));
+        }
+        level.sendParticles(ParticleTypes.HEART, target.getX(), target.getY(0.9D), target.getZ(), 8, 0.25D, 0.3D, 0.25D, 0.02D);
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, target.getX(), target.getY(0.7D), target.getZ(), 8, 0.2D, 0.25D, 0.2D, 0.02D);
+        level.playSound(null, target.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.8F, 1.2F);
+        player.sendSystemMessage(Component.literal(
+                "[debug] Restored " + target.getName().getString() + " for " + healAmount + " health."
+        ));
+    }
+
+    private static void runVitalityTransfer(ServerPlayer player, ServerLevel level, SpellChain spell) {
+        LivingEntity target = findLivingTargetInLook(player, level, 10.0D);
+        if (target == null) {
+            player.sendSystemMessage(Component.literal(
+                    "[debug] Vitality transfer needs a seen living target."
+            ));
+            return;
+        }
+
+        float selfCost = hasGlyph(spell, "self") || hasGlyph(spell, "caster") ? 4.0F : 2.0F;
+        if (player.getHealth() <= selfCost + 1.0F) {
+            player.sendSystemMessage(Component.literal(
+                    "[debug] Not enough health to sustain the vitality transfer safely."
+            ));
+            return;
+        }
+
+        player.hurtServer(level, level.damageSources().magic(), selfCost);
+        float healAmount = selfCost + 3.0F + (hasGlyph(spell, "restore") ? 1.0F : 0.0F);
+        target.heal(healAmount);
+        if (hasGlyph(spell, "strengthen")) {
+            target.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 200, 0));
+        }
+
+        level.sendParticles(ParticleTypes.DAMAGE_INDICATOR, player.getX(), player.getY(0.7D), player.getZ(), 6, 0.2D, 0.25D, 0.2D, 0.02D);
+        level.sendParticles(ParticleTypes.HEART, target.getX(), target.getY(0.9D), target.getZ(), 10, 0.25D, 0.35D, 0.25D, 0.03D);
+        level.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.PLAYERS, 0.7F, 0.8F);
+        level.playSound(null, target.blockPosition(), SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.8F, 1.2F);
+        player.sendSystemMessage(Component.literal(
+                "[debug] Converted " + selfCost + " of your health into " + healAmount + " healing for " + target.getName().getString() + "."
+        ));
+    }
+
+    private static void runPatternInteraction(ServerPlayer player, ServerLevel level, SpellChain spell) {
+        BlockHitResult hit = pickTargetedBlock(player, 6.0D);
+        if (hit == null) {
+            player.sendSystemMessage(Component.literal(
+                    "[debug] Pattern interaction needs a targeted block."
+            ));
+            return;
+        }
+
+        BlockPos pos = hit.getBlockPos();
+        BlockState state = level.getBlockState(pos);
+        if (!state.hasProperty(BlockStateProperties.OPEN)) {
+            player.sendSystemMessage(Component.literal(
+                    "[debug] Targeted block has no open/closed pattern to manipulate."
+            ));
+            return;
+        }
+
+        boolean desiredOpen = hasGlyph(spell, "gentle") || hasGlyph(spell, "separate") || !state.getValue(BlockStateProperties.OPEN);
+        if (state.getValue(BlockStateProperties.OPEN) == desiredOpen) {
+            player.sendSystemMessage(Component.literal(
+                    "[debug] The targeted structure is already in the requested state."
+            ));
+            return;
+        }
+
+        level.setBlock(pos, state.setValue(BlockStateProperties.OPEN, desiredOpen), 3);
+        level.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5D, pos.getY() + 0.6D, pos.getZ() + 0.5D, 12, 0.25D, 0.3D, 0.25D, 0.02D);
+        level.playSound(
+                null,
+                pos,
+                desiredOpen ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE,
+                SoundSource.BLOCKS,
+                1.0F,
+                hasGlyph(spell, "gentle") ? 1.2F : 0.9F
+        );
+        player.sendSystemMessage(Component.literal(
+                "[debug] Reworked the target block's locking pattern."
+        ));
+    }
+
+    private static void runConstructionEffect(ServerPlayer player, ServerLevel level, SpellChain spell) {
+        if (hasGlyph(spell, "raise")) {
+            int placed = placeRaisedStoneWall(player, level);
+            player.sendSystemMessage(Component.literal(
+                    placed > 0
+                            ? "[debug] Raised a temporary stone wall footprint with " + placed + " block(s)."
+                            : "[debug] Could not find enough open space to raise the wall."
+            ));
+            return;
+        }
+
+        int placed = placeStonePath(player, level);
+        player.sendSystemMessage(Component.literal(
+                placed > 0
+                        ? "[debug] Shaped a stone path with " + placed + " block(s)."
+                        : "[debug] Could not find enough open ground to shape the path."
+        ));
+    }
+
     private static void spawnDebugFireball(ServerPlayer player, ServerLevel level) {
         Vec3 look = player.getLookAngle();
         LargeFireball fireball = new LargeFireball(level, player, look.scale(0.1D), 0);
         fireball.setPos(player.getX() + look.x * 2.0D, player.getEyeY() - 0.15D, player.getZ() + look.z * 2.0D);
         level.addFreshEntity(fireball);
+    }
+
+    private static void spawnFireballTrailParticles(ServerPlayer player, ServerLevel level) {
+        Vec3 look = player.getLookAngle().normalize();
+        for (int step = 1; step <= 6; step++) {
+            double distance = step * 0.8D;
+            double x = player.getX() + look.x * distance;
+            double y = player.getEyeY() - 0.1D + look.y * distance;
+            double z = player.getZ() + look.z * distance;
+            level.sendParticles(ParticleTypes.FLAME, x, y, z, 2, 0.05D, 0.05D, 0.05D, 0.0D);
+            level.sendParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.03D, 0.03D, 0.03D, 0.0D);
+        }
+    }
+
+    private static void spawnForcePulseParticles(ServerPlayer player, ServerLevel level) {
+        Vec3 look = player.getLookAngle().normalize();
+        for (int step = 1; step <= 5; step++) {
+            double distance = step * 1.0D;
+            double x = player.getX() + look.x * distance;
+            double y = player.getEyeY() - 0.05D + look.y * distance;
+            double z = player.getZ() + look.z * distance;
+            level.sendParticles(ParticleTypes.CLOUD, x, y, z, 3, 0.08D, 0.08D, 0.08D, 0.01D);
+        }
+    }
+
+    private static LivingEntity resolveRestorationTarget(ServerPlayer player, ServerLevel level, SpellChain spell) {
+        boolean explicitlySelf = hasGlyph(spell, "self") || hasGlyph(spell, "caster");
+        boolean explicitlyTargeted = hasGlyph(spell, "seen_target");
+        if (explicitlyTargeted) {
+            LivingEntity target = findLivingTargetInLook(player, level, 10.0D);
+            if (target != null) {
+                return target;
+            }
+        }
+        if (explicitlySelf || !explicitlyTargeted) {
+            return player;
+        }
+        return null;
+    }
+
+    private static LivingEntity findLivingTargetInLook(ServerPlayer player, ServerLevel level, double maxDistance) {
+        Vec3 origin = player.getEyePosition();
+        Vec3 look = player.getLookAngle().normalize();
+        LivingEntity bestTarget = null;
+        double bestAlong = maxDistance + 1.0D;
+        double bestOffset = Double.MAX_VALUE;
+
+        for (LivingEntity entity : level.getEntitiesOfClass(
+                LivingEntity.class,
+                player.getBoundingBox().expandTowards(look.scale(maxDistance)).inflate(1.5D),
+                entity -> entity.isAlive() && entity != player
+        )) {
+            Vec3 center = entity.getBoundingBox().getCenter();
+            Vec3 toEntity = center.subtract(origin);
+            double along = toEntity.dot(look);
+            if (along < 0.0D || along > maxDistance) {
+                continue;
+            }
+
+            Vec3 closestPoint = origin.add(look.scale(along));
+            double offset = center.distanceTo(closestPoint);
+            double allowedOffset = Math.max(1.0D, entity.getBbWidth());
+            if (offset > allowedOffset) {
+                continue;
+            }
+
+            if (along < bestAlong || (Math.abs(along - bestAlong) < 0.25D && offset < bestOffset)) {
+                bestTarget = entity;
+                bestAlong = along;
+                bestOffset = offset;
+            }
+        }
+
+        return bestTarget;
+    }
+
+    private static BlockHitResult pickTargetedBlock(ServerPlayer player, double distance) {
+        HitResult hit = player.pick(distance, 0.0F, false);
+        if (hit instanceof BlockHitResult blockHit && hit.getType() == HitResult.Type.BLOCK) {
+            return blockHit;
+        }
+        return null;
+    }
+
+    private static int placeStonePath(ServerPlayer player, ServerLevel level) {
+        BlockPos start = findConstructionStart(player, level);
+        Direction forward = player.getDirection();
+        int placed = 0;
+        for (int step = 0; step < 4; step++) {
+            BlockPos cursor = start.relative(forward, step);
+            if (tryPlaceConstructBlock(level, cursor, Blocks.STONE_BRICKS.defaultBlockState())) {
+                placed++;
+            }
+        }
+        if (placed > 0) {
+            level.sendParticles(ParticleTypes.CRIT, start.getX() + 0.5D, start.getY() + 0.2D, start.getZ() + 0.5D, 12, 0.4D, 0.1D, 0.4D, 0.02D);
+            level.playSound(null, start, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 1.0F, 0.95F);
+        }
+        return placed;
+    }
+
+    private static int placeRaisedStoneWall(ServerPlayer player, ServerLevel level) {
+        BlockPos start = findConstructionStart(player, level);
+        Direction side = player.getDirection().getClockWise();
+        int placed = 0;
+        for (int width = -1; width <= 1; width++) {
+            for (int height = 0; height < 2; height++) {
+                BlockPos cursor = start.relative(side, width).above(height);
+                if (tryPlaceConstructBlock(level, cursor, Blocks.COBBLESTONE.defaultBlockState())) {
+                    placed++;
+                }
+            }
+        }
+        if (placed > 0) {
+            level.sendParticles(ParticleTypes.CLOUD, start.getX() + 0.5D, start.getY() + 0.8D, start.getZ() + 0.5D, 14, 0.6D, 0.5D, 0.6D, 0.02D);
+            level.playSound(null, start, SoundEvents.STONE_PLACE, SoundSource.BLOCKS, 1.0F, 0.8F);
+        }
+        return placed;
+    }
+
+    private static BlockPos findConstructionStart(ServerPlayer player, ServerLevel level) {
+        BlockHitResult hit = pickTargetedBlock(player, 8.0D);
+        if (hit != null) {
+            BlockPos pos = hit.getBlockPos();
+            BlockState hitState = level.getBlockState(pos);
+            return hitState.canBeReplaced() ? pos : pos.above();
+        }
+        return player.blockPosition().relative(player.getDirection());
+    }
+
+    private static boolean tryPlaceConstructBlock(ServerLevel level, BlockPos pos, BlockState state) {
+        BlockState existing = level.getBlockState(pos);
+        if (!existing.canBeReplaced()) {
+            return false;
+        }
+        if (!level.getBlockState(pos.below()).blocksMotion()) {
+            return false;
+        }
+        return level.setBlock(pos, state, 3);
+    }
+
+    private static boolean hasGlyph(SpellChain spell, String glyphId) {
+        return spell.glyphs().stream().anyMatch(glyph -> glyph.id().equals(glyphId));
     }
 }

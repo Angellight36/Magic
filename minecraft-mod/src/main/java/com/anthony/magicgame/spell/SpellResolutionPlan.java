@@ -25,4 +25,8 @@ public record SpellResolutionPlan(
     public SpellIntent intent() {
         return interpretedSpell.intent();
     }
+
+    public int confidenceScore() {
+        return interpretedSpell.confidenceScore();
+    }
 }

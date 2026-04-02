@@ -19,6 +19,7 @@ class SpellInterpreterTest {
 
         assertEquals(SpellIntent.TRAVELING_EFFECT, interpreted.intent());
         assertTrue(interpreted.domainCandidates().contains(MagicDomain.DAMAGE));
+        assertTrue(interpreted.traits().contains(SpellTrait.TRAVELING_DELIVERY));
     }
 
     @Test
@@ -27,5 +28,39 @@ class SpellInterpreterTest {
 
         assertEquals(SpellIntent.BOUNDARY_WARD, plan.intent());
         assertEquals(MagicDomain.PATTERN, plan.primaryDomain());
+        assertTrue(plan.interpretedSpell().traits().contains(SpellTrait.ANCHORED));
+    }
+
+    @Test
+    void healingTouchClassifiesAsRestorationInsteadOfGenericLifeMagic() {
+        SpellChain spell = CoreGlyphRegistry.chain("perception", "life", "life_pattern", "refine", "restore", "strengthen", "stabilize");
+
+        InterpretedSpell interpreted = SpellInterpreter.interpret(spell);
+
+        assertEquals(SpellIntent.RESTORATION_EFFECT, interpreted.intent());
+        assertTrue(interpreted.traits().contains(SpellTrait.RESTORATIVE));
+        assertTrue(interpreted.intentScore(SpellIntent.RESTORATION_EFFECT) > interpreted.intentScore(SpellIntent.VITALITY_TRANSFER));
+    }
+
+    @Test
+    void sacrificialHealingPrefersVitalityTransferOverPlainRestoration() {
+        SpellChain spell = CoreGlyphRegistry.chain("perception", "self", "seen_target", "life", "life_pattern", "transfer", "restore", "stabilize");
+
+        InterpretedSpell interpreted = SpellInterpreter.interpret(spell);
+
+        assertEquals(SpellIntent.VITALITY_TRANSFER, interpreted.intent());
+        assertTrue(interpreted.traits().contains(SpellTrait.VITALITY_TRANSFER));
+        assertTrue(interpreted.traits().contains(SpellTrait.SELF_REFERENCE));
+        assertTrue(interpreted.traits().contains(SpellTrait.TARGETED_REFERENCE));
+    }
+
+    @Test
+    void unlockChainStaysPatternFocused() {
+        SpellChain spell = CoreGlyphRegistry.chain("perception", "order", "binding", "locking_pattern", "separate", "gentle");
+
+        InterpretedSpell interpreted = SpellInterpreter.interpret(spell);
+
+        assertEquals(SpellIntent.PATTERN_INTERACTION, interpreted.intent());
+        assertTrue(interpreted.traits().contains(SpellTrait.PATTERN_SENSITIVE));
     }
 }

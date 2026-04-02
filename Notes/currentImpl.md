@@ -28,8 +28,12 @@ This file tracks the current state of the Magic prototype so we can see what alr
 ### 2. Command-driven prototype interface
 
 - `/magic status`
+- `/magic glyphs`
+- `/magic analyze <spell>`
+- `/magic analyze chain <glyph ids...>`
 - `/magic spells`
 - `/magic cast <spell>`
+- `/magic cast chain <glyph ids...>`
 - `/magic debug`
 - `/magic debug <true/false>`
 - `/magic debug feature <feature> <true/false>`
@@ -52,6 +56,7 @@ Primary implementation:
 - Mana spending
 - Mana refill helpers
 - Automatic regeneration on server ticks
+- Server-to-client mana HUD sync once per second and on direct mana changes
 - Multiplayer-safe because it is stored in server saved data
 
 Primary implementation:
@@ -59,6 +64,7 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\mana\ManaProfile.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\mana\PlayerManaManager.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\mana\ManaRegenerationService.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\MagicNetworking.java`
 
 ### 4. Glyph system foundation
 
@@ -66,6 +72,7 @@ Primary implementation:
 - `GlyphCategory` enum exists
 - `GlyphDefinition` record exists
 - `SpellChain` raw ordered glyph container exists
+- `SpellChainParser` supports temporary text-form custom glyph sequences
 - Initial core glyph registry exists with the first prototype slice from the design docs
 
 Primary implementation:
@@ -74,28 +81,45 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\GlyphCategory.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\GlyphDefinition.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellChain.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellChainParser.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\registry\CoreGlyphRegistry.java`
 
 ### 5. Prototype spell interpretation and resolution
 
 - Data-driven prototype spell definitions exist
 - Seeded prototype spell registry exists
-- First-pass spell interpretation exists
+- Weighted spell interpretation exists
 - First-pass resolution plan exists
 - Prototype mana cost and stability scoring exist
 - Prototype intent classification exists:
   - `TRAVELING_EFFECT`
   - `BOUNDARY_WARD`
   - `PATTERN_INTERACTION`
-  - `HEALING_EFFECT`
+  - `RESTORATION_EFFECT`
+  - `VITALITY_TRANSFER`
   - `CONSTRUCTION_EFFECT`
   - `UNKNOWN_UNSTABLE`
+- Interpreted spells now expose:
+  - weighted domain scores
+  - competing intent scores
+  - semantic traits
+  - confidence margin
+- Current semantic traits include:
+  - anchored / bounded / field-shaped
+  - traveling delivery
+  - restorative
+  - vitality transfer
+  - pattern-sensitive / disruptive
+  - structural shaping
+  - self / targeted reference
+  - persistent / attuned owner
 
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\PrototypeSpellDefinition.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellIntent.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\InterpretedSpell.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellTrait.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellResolutionPlan.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellInterpreter.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellResolver.java`
@@ -107,8 +131,10 @@ Primary implementation:
 - Anchored effects tick once per second
 - Anchored effects decay over time
 - `alert_ward` can now be anchored at a player's position
-- Alert wards detect non-owner player entry and can emit debug activation messages
+- Alert wards currently detect any non-owner entity entry for solo testing and can emit debug activation messages
 - Alert wards can render temporary vanilla particle boundaries for testing
+- Alert wards can render temporary vanilla activation burst particles
+- Alert wards can play temporary vanilla activation sounds
 - Player-owned anchors can be listed and cleared with commands
 
 Primary implementation:
@@ -125,29 +151,65 @@ Primary implementation:
 - Current debug features:
   - `ward_messages`
   - `ward_boundary_particles`
+  - `ward_activation_particles`
+  - `ward_activation_sound`
   - `fireball_visuals`
+  - `fireball_trail_particles`
+  - `fireball_launch_sound`
+  - `mana_hud_text`
+  - `spell_feedback_text`
 
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\debug\MagicDebugFeature.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\debug\MagicDebugSettings.java`
 
-### 8. Seeded prototype spells currently available
+### 8. Client HUD and spell feedback sync
+
+- Text-based mana HUD exists as a temporary placeholder UI layer
+- Short-lived text spell feedback can appear on the client HUD after analysis/casts
+- Mana and spell feedback use Fabric payloads so a richer HUD can replace the text later without changing the server authority model
+
+Primary implementation:
+
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\ManaHudPayload.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\SpellFeedbackPayload.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicClientNetworking.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicHudOverlay.java`
+
+### 9. Seeded prototype spells currently available
 
 - `fireball`
+- `force_bolt`
 - `healing_touch`
+- `vitality_exchange`
 - `unlock`
 - `alert_ward`
 - `stone_path`
+- `stone_wall`
 
 Source:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\registry\PrototypeSpellRegistry.java`
 
-### 9. Tests currently in place
+### 10. Prototype cast effects currently implemented
+
+- Fire traveling chains can still spawn the temporary vanilla `LargeFireball` placeholder when the fireball debug visuals are enabled.
+- Force traveling chains can now strike and knock back a looked-at living target.
+- Restoration chains can heal the caster or a looked-at living target depending on the chain references.
+- Vitality transfer chains can now convert the caster's health into stronger healing for a looked-at target.
+- Pattern interaction chains can manipulate openable block states like doors and trapdoors.
+- Construction chains can now place short prototype stone paths and raised stone walls.
+
+Primary implementation:
+
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
+
+### 11. Tests currently in place
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\debug\MagicDebugSettingsTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainParserTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellInterpreterTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstanceTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\CoreGlyphRegistryTest.java`
@@ -178,7 +240,12 @@ Source:
 ## Temporary vanilla placeholders that need replacement later
 
 - `alert_ward` boundary visualization currently uses vanilla `END_ROD` and `ENCHANT` particles
+- `alert_ward` activation currently uses vanilla `CRIT` and `END_ROD` particles
+- `alert_ward` activation currently uses vanilla `AMETHYST_BLOCK_CHIME`
 - `fireball` debug visualization currently uses vanilla `LargeFireball`
+- `fireball` launch feedback currently uses vanilla `FLAME` and `SMOKE` particles
+- `fireball` launch feedback currently uses vanilla `BLAZE_SHOOT`
+- mana and spell state currently use a temporary text HUD instead of final art
 - Ward activation currently uses debug system chat messages instead of custom UI/audio
 
 ## Asset management status
@@ -195,9 +262,8 @@ We should pull in generated assets once we start one or more of these:
 
 ## What does not exist yet
 
-- Rich world interaction beyond server messages and anchor state
+- Rich world interaction beyond placeholder particles, sounds, projectiles, and anchor state
 - magical scars or other persistent environmental consequences
-- networking/client sync for mana HUDs
 - spell authoring UI
 - custom items or blocks
 - enemies or AI using the magic system
@@ -206,8 +272,8 @@ We should pull in generated assets once we start one or more of these:
 
 ## Next steps
 
-1. Expand the command-driven prototype from seeded spells into flexible spell authoring and debugging.
-2. Add server-to-client sync for mana and spell state so a HUD can exist later.
-3. Add a stronger real world effect, likely a safe debug `fireball`, construction effect, or visible ward feedback.
-4. Add magical scar persistence and decay behavior on top of the anchored effect framework.
-5. Replace temporary vanilla placeholders with project-owned visuals, audio, and feedback once asset work starts.
+1. Add more real spell outcomes beyond the current placeholder `fireball` and ward feedback path.
+2. Build a proper spell authoring UI on top of the current custom chain commands.
+3. Add magical scar persistence and decay behavior on top of the anchored effect framework.
+4. Replace temporary vanilla placeholders with project-owned visuals, audio, and feedback once asset work starts.
+5. Add more multiplayer content hooks so future enemies and content mods can adopt the core system cleanly.

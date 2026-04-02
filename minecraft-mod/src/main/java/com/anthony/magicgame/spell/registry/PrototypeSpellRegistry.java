@@ -19,28 +19,46 @@ public final class PrototypeSpellRegistry {
                     List.of("gather", "fire", "shape", "separate", "forward", "direct", "stabilize", "on_impact", "release")
             ),
             new PrototypeSpellDefinition(
+                    "force_bolt",
+                    "Force Bolt",
+                    "Compressed force released forward to strike and shove a target.",
+                    List.of("gather", "force", "shape", "separate", "forward", "direct", "on_impact", "release")
+            ),
+            new PrototypeSpellDefinition(
                     "healing_touch",
                     "Healing Touch",
                     "A first-pass healing chain for living targets.",
-                    List.of("perception", "life", "life_pattern", "refine", "strengthen", "stabilize")
+                    List.of("perception", "life", "life_pattern", "refine", "restore", "strengthen", "stabilize")
+            ),
+            new PrototypeSpellDefinition(
+                    "vitality_exchange",
+                    "Vitality Exchange",
+                    "Transfers some of the caster's vitality into a seen living target.",
+                    List.of("perception", "self", "seen_target", "life", "life_pattern", "transfer", "restore", "stabilize")
             ),
             new PrototypeSpellDefinition(
                     "unlock",
                     "Unlock",
                     "Pattern-focused separation of a locking structure.",
-                    List.of("perception", "order", "binding", "locking_pattern", "separate")
+                    List.of("perception", "order", "binding", "locking_pattern", "separate", "gentle")
             ),
             new PrototypeSpellDefinition(
                     "alert_ward",
                     "Alert Ward",
                     "Anchored boundary field that watches for entry.",
-                    List.of("anchor", "boundary", "field", "perception", "on_entry", "attune", "caster", "bind")
+                    List.of("anchor", "boundary", "field", "persist", "perception", "on_entry", "attune", "caster", "bind")
             ),
             new PrototypeSpellDefinition(
                     "stone_path",
                     "Stone Path",
                     "Simple construction chain for shaping grounded structure.",
-                    List.of("earth", "shape", "path", "surface", "anchor", "strengthen", "stabilize")
+                    List.of("earth", "shape", "path", "surface", "chosen_point", "strengthen", "stabilize")
+            ),
+            new PrototypeSpellDefinition(
+                    "stone_wall",
+                    "Stone Wall",
+                    "Raises a short stone barrier from the targeted ground.",
+                    List.of("earth", "shape", "raise", "boundary", "chosen_point", "strengthen", "stabilize")
             )
     );
 

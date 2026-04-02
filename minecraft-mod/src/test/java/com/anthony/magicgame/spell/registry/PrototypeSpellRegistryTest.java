@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class PrototypeSpellRegistryTest {
     @Test
     void seededRegistrySizeMatchesExpectations() {
-        assertEquals(5, PrototypeSpellRegistry.size());
+        assertEquals(8, PrototypeSpellRegistry.size());
     }
 
     @Test
