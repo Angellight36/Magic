@@ -22,8 +22,7 @@ public final class LockingPatternInteractionGuard {
                 return InteractionResult.PASS;
             }
 
-            var state = level.getBlockState(hitResult.getBlockPos());
-            if (!LockingPatternBlocks.isLockable(state)) {
+            if (!LockingPatternBlocks.isLockable(level, hitResult.getBlockPos())) {
                 return InteractionResult.PASS;
             }
 
@@ -31,7 +30,7 @@ public final class LockingPatternInteractionGuard {
                 return InteractionResult.PASS;
             }
 
-            serverPlayer.sendSystemMessage(Component.literal("A locking pattern prevents the block from being opened by hand."));
+            serverPlayer.sendSystemMessage(Component.literal("A locking pattern prevents the block from being altered by hand."));
             return InteractionResult.FAIL;
         });
     }

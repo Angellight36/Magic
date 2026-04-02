@@ -646,10 +646,9 @@ public final class MagicCommand {
         }
 
         BlockPos pos = LockingPatternBlocks.canonicalize(level, hit.getBlockPos());
-        BlockState state = level.getBlockState(pos);
-        if (!LockingPatternBlocks.isLockable(state)) {
+        if (!LockingPatternBlocks.isLockable(level, pos)) {
             player.sendSystemMessage(Component.literal(
-                    "[debug] Targeted block has no open/closed pattern to manipulate."
+                    "[debug] Targeted block has no stateful or storable pattern this lock logic can currently bind."
             ));
             return;
         }

@@ -47,7 +47,11 @@ This file tracks the current state of the Magic prototype so we can see what alr
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
-- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockedBlockState.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\BlockPatternTag.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\TaggedBlockPatternState.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\BlockPatternTagManager.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\PatternTaggedBlocks.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\BlockPatternTagTicker.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockedBlockManager.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockingPatternBlocks.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockingPatternInteractionGuard.java`
@@ -228,6 +232,14 @@ Source:
 - Restoration targeting now uses weighted recipient scoring and can resolve ambiguously instead of following one hard rule.
 - Vitality transfer chains can now convert the caster's health into stronger healing for a looked-at target.
 - Pattern interaction chains can now bind, unlock, or disrupt a persistent magical lock state on openable blocks.
+- Persistent block pattern tags now exist as a generalized system, with `MAGIC_LOCKED` as the first concrete tag.
+- Magical locks now work across more than doors:
+  - doors, trapdoors, and fence gates
+  - levers and other powered toggles
+  - pistons and other extendable blocks
+  - container-backed blocks such as chests
+- Stateful blocks with exposed booleans can have those states re-enforced while a magical tag is active.
+- Container-backed blocks can still be tagged and blocked from manual interaction even when there is no useful open/closed property to freeze.
 - Locked blocks now block manual interaction until their magical lock state is removed.
 - Construction chains can now place short prototype stone paths and raised stone walls.
 
@@ -244,6 +256,7 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellInterpreterTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellResolverTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\PatternInteractionRulesTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\PatternTaggedBlocksTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstanceTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\CoreGlyphRegistryTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\PrototypeSpellRegistryTest.java`

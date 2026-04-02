@@ -5,6 +5,7 @@ import com.anthony.magicgame.command.MagicStatusCommand;
 import com.anthony.magicgame.mana.ManaRegenerationService;
 import com.anthony.magicgame.network.MagicNetworking;
 import com.anthony.magicgame.spell.effect.AnchoredEffectTicker;
+import com.anthony.magicgame.spell.pattern.BlockPatternTagTicker;
 import com.anthony.magicgame.spell.pattern.LockingPatternInteractionGuard;
 import com.anthony.magicgame.spell.registry.CoreGlyphRegistry;
 import com.anthony.magicgame.spell.registry.PrototypeSpellRegistry;
@@ -24,6 +25,7 @@ public final class MagicGameMod implements ModInitializer {
         MagicNetworking.register();
         ManaRegenerationService.register();
         AnchoredEffectTicker.register();
+        BlockPatternTagTicker.register();
         LockingPatternInteractionGuard.register();
         MagicCommand.register();
         MagicStatusCommand.register();

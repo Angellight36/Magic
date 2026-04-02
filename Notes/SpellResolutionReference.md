@@ -67,6 +67,12 @@ Execution note:
 - `disrupt` / `terminate` / `unravel` now tend to break a magical lock state more forcefully
 - the current prototype no longer treats vanilla open/closed as the meaning of lock
 - instead it keeps a separate magical locked-state over the target block
+- that lock now sits on top of the generalized block pattern tag layer, so the same infrastructure can later carry tags besides `MAGIC_LOCKED`
+- current `MAGIC_LOCKED` support covers:
+  - openable blocks like doors, trapdoors, and fence gates
+  - powered toggles like levers
+  - extendable blocks like pistons
+  - container-backed blocks like chests
 
 ### `RESTORATION_EFFECT`
 

@@ -11,7 +11,8 @@
 - Build real spell authoring UI once we move past the temporary command-driven workflow.
 - Build visible world interactions on top of the anchored effect framework, including magical scars and richer ward behavior.
 - Keep tuning the weighted interpreter as more glyphs, rituals, and mixed-purpose spell chains are added.
-- Expand the magical lock system beyond doors/openables so locks, seals, keyed runes, and cursed bindings share one pattern-state model.
+- Expand the generalized block pattern tag system beyond `MAGIC_LOCKED`, including seals, keyed runes, cursed bindings, and future entity-facing tags.
+- Decide which non-plant block families should become first-class tag targets beyond the current open/powered/extended/container heuristics.
 - Move more execution preconditions out of `MagicCommand` and into testable spell/runtime rule helpers.
 - Split the prototype cast effects out of `MagicCommand` into dedicated execution/targeting systems once the spell runtime grows beyond command-only testing.
 - Tighten temporary ward trigger filtering once solo testing no longer needs "any non-owner entity" detection.
