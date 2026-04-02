@@ -26,4 +26,9 @@ public final class GlyphFocusItem extends Item {
         tooltipAdder.accept(Component.literal("Hold this focus and press G to compose a spell."));
         tooltipAdder.accept(Component.literal("Press R to quick-cast your last composed chain."));
     }
+
+    @Override
+    public boolean isFoil(ItemStack stack) {
+        return true;
+    }
 }

@@ -8,6 +8,10 @@ It does not try to replace the larger design docs. It just answers:
 - what glyph combinations usually push a spell into them?
 - what source / recipient patterns are currently recognized?
 
+Companion note:
+
+- `C:\Users\antho\Desktop\Magic\Notes\CastingFocusAndMana.md`
+
 ## Current resolution types
 
 ### `TRAVELING_EFFECT`
@@ -217,6 +221,13 @@ Common pushes:
 - `seen_target`
 
 This is currently recognized structurally, but the runtime does not fully exploit it yet.
+
+## Important interpretation limits
+
+- Domain alone should not be expected to separate similar spells like `fireball` and `flare`.
+- The interpreter can already separate meaning through intent, traits, recipients, and sources.
+- The bigger remaining gap is missing glyph vocabulary for things like light, signaling, quantity, and sustained mana feed.
+- Current source scoring is still mostly interpretive; long-term mana input should be explicitly declared by the chain rather than only inferred from it.
 
 ## First-pass likely failures
 

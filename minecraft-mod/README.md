@@ -73,5 +73,6 @@ Prototype commands still exist for debugging and admin-style testing:
 
 - Local Fabric docs mirror: `C:\Users\antho\Desktop\Magic\FabricDocs`
 - Current implementation snapshot: `C:\Users\antho\Desktop\Magic\Notes\currentImpl.md`
+- Casting focus and mana direction: `C:\Users\antho\Desktop\Magic\Notes\CastingFocusAndMana.md`
 - Effect runtime audit: `C:\Users\antho\Desktop\Magic\Notes\EffectRuntimeAudit.md`
 - Release versioning note: `C:\Users\antho\Desktop\Magic\Notes\ReleaseVersioning.md`

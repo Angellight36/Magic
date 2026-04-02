@@ -12,6 +12,7 @@ This file tracks the current state of the Magic prototype so we can see what alr
   - `C:\Users\antho\Desktop\Magic\MagicLore.md`
   - `C:\Users\antho\Desktop\Magic\MagicOverviewAndLore.md`
 - Focused system notes:
+  - `C:\Users\antho\Desktop\Magic\Notes\CastingFocusAndMana.md`
   - `C:\Users\antho\Desktop\Magic\Notes\SpellResolutionReference.md`
   - `C:\Users\antho\Desktop\Magic\Notes\LocksAndKeys.md`
   - `C:\Users\antho\Desktop\Magic\Notes\EffectRuntimeAudit.md`
@@ -52,6 +53,7 @@ This file tracks the current state of the Magic prototype so we can see what alr
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\PrototypeSpellCastingService.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicItems.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\LinkedKeyItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\PhysicalLockItem.java`
@@ -171,7 +173,7 @@ Current failure support:
 - Anchored effects tick once per second
 - Anchored effects decay over time
 - `alert_ward` can now be anchored at a player's position
-- Alert wards currently detect any non-owner entity entry for solo testing and can emit debug activation messages
+- Alert wards currently detect living non-owner entrants and can emit debug activation messages
 - Alert wards can render temporary vanilla particle boundaries for testing
 - Alert wards can render temporary vanilla activation burst particles
 - Alert wards can play temporary vanilla activation sounds
@@ -183,6 +185,7 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstance.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\effect\AnchoredEffectManager.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\effect\AnchoredEffectTicker.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\effect\WardTrackingRules.java`
 
 ### 7. Debug toggle system
 
@@ -223,6 +226,7 @@ Primary implementation:
 ### 8.5. Client spell composer and quick-cast loop
 
 - A held `glyph_focus` item now acts as the current player-facing casting tool for current dev builds
+- `glyph_focus` is currently only one casting aid, not a universal lore rule for who can perform magic
 - Pressing `G` while holding the focus opens a client-side glyph composer
 - The composer can append glyphs by category, analyze the current chain, cast it, remove the last glyph, or clear the chain
 - The composer now shows the current chain as visible glyph chips while you build it and uses a neutral dark overlay instead of the earlier heavy blue tint
@@ -300,6 +304,7 @@ Primary implementation:
   - language entries
   - crafting recipes
 - Item visuals currently use placeholder vanilla item textures through generated item models.
+- `glyph_focus` now uses the vanilla `writable_book` texture plus permanent glint as a temporary "magical book and quill" placeholder.
 
 Primary implementation:
 
@@ -332,6 +337,8 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\PatternTaggedBlocksTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstanceTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\TravelingSpellRuntimeTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\WardTrackingRulesTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\PrototypeSpellCastingServiceTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\CoreGlyphRegistryTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\PrototypeSpellRegistryTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\mana\ManaProfileTest.java`
@@ -380,7 +387,7 @@ Primary implementation:
 - `fireball` launch feedback currently uses vanilla `FLAME` and `SMOKE` particles
 - `fireball` launch feedback currently uses vanilla `BLAZE_SHOOT`
 - `fireball` impact feedback currently uses vanilla `FLAME`, `SMOKE`, `LAVA`, and `GENERIC_EXPLODE`
-- `glyph_focus` currently uses the vanilla `amethyst_shard` texture through a generated item model
+- `glyph_focus` currently uses the vanilla `writable_book` texture through a generated item model and permanent glint
 - `linked_key` currently uses the vanilla `tripwire_hook` texture through a generated item model
 - `physical_lock` currently uses the vanilla `iron_door_top` texture through a generated item model
 - mana and spell state currently use a temporary placeholder HUD instead of final art

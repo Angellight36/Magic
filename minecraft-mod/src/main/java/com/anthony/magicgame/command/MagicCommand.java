@@ -8,21 +8,13 @@ import com.anthony.magicgame.network.MagicNetworking;
 import com.anthony.magicgame.spell.GlyphCategory;
 import com.anthony.magicgame.spell.GlyphDefinition;
 import com.anthony.magicgame.spell.PrototypeSpellDefinition;
+import com.anthony.magicgame.spell.PrototypeSpellCastingService;
 import com.anthony.magicgame.spell.SpellChain;
 import com.anthony.magicgame.spell.SpellChainParser;
-import com.anthony.magicgame.spell.ConstructionPlacementRules;
-import com.anthony.magicgame.spell.SpellFlowRules;
 import com.anthony.magicgame.spell.SpellIntent;
-import com.anthony.magicgame.spell.SpellRecipient;
 import com.anthony.magicgame.spell.SpellResolutionPlan;
 import com.anthony.magicgame.spell.SpellResolver;
-import com.anthony.magicgame.spell.SpellSource;
-import com.anthony.magicgame.spell.SpellTargetingRules;
-import com.anthony.magicgame.spell.PatternInteractionRules;
-import com.anthony.magicgame.spell.pattern.LockedBlockManager;
-import com.anthony.magicgame.spell.pattern.LockingPatternBlocks;
 import com.anthony.magicgame.spell.effect.AnchoredEffectInstance;
-import com.anthony.magicgame.spell.effect.AnchoredEffectKind;
 import com.anthony.magicgame.spell.effect.AnchoredEffectManager;
 import com.anthony.magicgame.spell.effect.PrototypeSpellEffectService;
 import com.anthony.magicgame.spell.registry.CoreGlyphRegistry;
@@ -210,48 +202,28 @@ public final class MagicCommand {
         ServerPlayer player = requirePlayer(context);
         try {
             String spellId = StringArgumentType.getString(context, "spell").toLowerCase(Locale.ROOT);
-            if (!spellId.equals("alert_ward")) {
-                context.getSource().sendFailure(Component.literal(
-                        "Only alert_ward can be anchored in the current prototype."
-                ));
-                return 0;
-            }
-            AnchoredEffectKind kind = AnchoredEffectKind.ALERT_WARD;
-
             int radius = readOptionalInt(context, "radius", DEFAULT_ANCHOR_RADIUS);
             int durationSeconds = readOptionalInt(context, "duration_seconds", DEFAULT_ANCHOR_DURATION_SECONDS);
             SpellResolutionPlan plan = SpellResolver.resolve(PrototypeSpellRegistry.require(spellId));
-            PlayerManaManager manaManager = PlayerManaManager.get(context.getSource().getServer());
-            ManaProfile mana = manaManager.getOrCreate(player.getUUID());
-            if (!mana.trySpend(plan.manaCost())) {
-                context.getSource().sendFailure(Component.literal(
-                        "Not enough mana to anchor " + spellId + ". Need " + plan.manaCost()
-                                + ", have " + mana.currentMana() + "."
-                ));
+            PrototypeSpellCastingService.AnchorResult result = PrototypeSpellCastingService.anchorSpell(
+                    context.getSource().getServer(),
+                    player,
+                    spellId,
+                    radius,
+                    durationSeconds,
+                    plan
+            );
+            if (!result.success()) {
+                context.getSource().sendFailure(Component.literal(result.failureMessage()));
                 return 0;
             }
 
-            ServerLevel level = context.getSource().getLevel();
-            AnchoredEffectInstance effect = AnchoredEffectInstance.create(
-                    kind,
-                    player.getUUID(),
-                    spellId,
-                    level.dimension().identifier().toString(),
-                    player.blockPosition().getX(),
-                    player.blockPosition().getY(),
-                    player.blockPosition().getZ(),
-                    radius,
-                    durationSeconds * 20
-            );
-
-            AnchoredEffectManager effectManager = AnchoredEffectManager.get(context.getSource().getServer());
-            effectManager.addEffect(effect);
-            manaManager.setDirty();
-            MagicNetworking.syncMana(player, mana);
+            AnchoredEffectInstance effect = result.effect();
             context.getSource().sendSuccess(() -> Component.literal(
                     "Anchored " + spellId + " at " + formatPosition(effect)
                             + " with radius " + radius
-                            + " for " + durationSeconds + " seconds. Mana now " + mana.currentMana() + "/" + mana.maxMana() + "."
+                            + " for " + durationSeconds + " seconds. Mana now "
+                            + result.mana().currentMana() + "/" + result.mana().maxMana() + "."
             ), true);
             maybeSendSpellFeedback(
                     context.getSource().getServer(),
@@ -368,7 +340,10 @@ public final class MagicCommand {
     }
 
     private static CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestAnchorableSpells(SuggestionsBuilder builder) {
-        return SharedSuggestionProvider.suggest(List.of("alert_ward"), builder);
+        return SharedSuggestionProvider.suggest(
+                PrototypeSpellRegistry.ids().stream().filter(PrototypeSpellCastingService::isAnchorablePrototype),
+                builder
+        );
     }
 
     private static CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestDebugFeatures(SuggestionsBuilder builder) {
@@ -390,19 +365,18 @@ public final class MagicCommand {
             SpellChain spell,
             SpellResolutionPlan plan
     ) {
-        PlayerManaManager manaManager = PlayerManaManager.get(context.getSource().getServer());
-        ManaProfile mana = manaManager.getOrCreate(player.getUUID());
-        if (!mana.trySpend(plan.manaCost())) {
-            context.getSource().sendFailure(Component.literal(
-                    "Not enough mana for " + label + ". Need " + plan.manaCost()
-                            + ", have " + mana.currentMana() + "."
-            ));
+        PrototypeSpellCastingService.ManaSpendResult spendResult = PrototypeSpellCastingService.spendManaForCast(
+                context.getSource().getServer(),
+                player,
+                label,
+                plan.manaCost()
+        );
+        if (!spendResult.success()) {
+            context.getSource().sendFailure(Component.literal(spendResult.failureMessage()));
             return 0;
         }
 
-        manaManager.setDirty();
-        MagicNetworking.syncMana(player, mana);
-        showCastResult(context.getSource(), label, plan, mana);
+        showCastResult(context.getSource(), label, plan, spendResult.mana());
         showWarnings(context.getSource(), plan);
         runPrototypeEffects(player, context.getSource().getLevel(), spell, plan);
         maybeSendSpellFeedback(context.getSource().getServer(), player, "Cast " + label, summarizePlan(plan));
