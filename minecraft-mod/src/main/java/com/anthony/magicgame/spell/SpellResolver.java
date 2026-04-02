@@ -37,6 +37,62 @@ public final class SpellResolver {
                 .map(Map.Entry::getKey)
                 .orElse(MagicDomain.INFORMATION);
 
-        return new SpellResolutionPlan(interpreted, primaryDomain, manaCost, stabilityScore, warnings);
+        SpellFailureProfile likelyFailureProfile = selectFailureProfile(spell, interpreted, primaryDomain, stabilityScore);
+        return new SpellResolutionPlan(interpreted, primaryDomain, manaCost, stabilityScore, likelyFailureProfile, warnings);
+    }
+
+    private static SpellFailureProfile selectFailureProfile(
+            SpellChain spell,
+            InterpretedSpell interpreted,
+            MagicDomain primaryDomain,
+            int stabilityScore
+    ) {
+        if (!spell.isPrototypeCastable()) {
+            return new SpellFailureProfile(
+                    SpellFailureType.STRUCTURAL_FAILURE,
+                    4,
+                    primaryDomain,
+                    "The chain is missing enough structure to resolve cleanly.",
+                    "Likely to partially mis-shape into a crude or unintended pattern effect."
+            );
+        }
+        if (interpreted.intent() == SpellIntent.UNKNOWN_UNSTABLE || interpreted.confidenceScore() <= 1) {
+            return new SpellFailureProfile(
+                    SpellFailureType.INTERPRETIVE_FAILURE,
+                    3,
+                    primaryDomain,
+                    "The interpreter sees multiple plausible outcomes and cannot strongly disambiguate them.",
+                    "Likely to drift into the wrong effect family or resolve inconsistently."
+            );
+        }
+        if (interpreted.warnings().stream().anyMatch(warning -> warning.contains("difficult to aim") || warning.contains("recipient or destination"))) {
+            return new SpellFailureProfile(
+                    SpellFailureType.INFORMATION_FAILURE,
+                    2,
+                    primaryDomain,
+                    "The chain lacks enough targeting or reference detail for precise resolution.",
+                    "Likely to choose the wrong target, miss, or resolve with fuzzy recipients."
+            );
+        }
+        if (interpreted.intent() == SpellIntent.BOUNDARY_WARD
+                && interpreted.warnings().stream().anyMatch(warning -> warning.contains("disperse unpredictably"))) {
+            return new SpellFailureProfile(
+                    SpellFailureType.PERSISTENCE_FAILURE,
+                    3,
+                    primaryDomain,
+                    "The anchored structure is under-defined for stable persistence.",
+                    "Likely to collapse early, flicker, or bind to the wrong local structure."
+            );
+        }
+        if (stabilityScore < 55) {
+            return new SpellFailureProfile(
+                    SpellFailureType.STRUCTURAL_FAILURE,
+                    2,
+                    primaryDomain,
+                    "The chain is technically resolvable but still structurally fragile.",
+                    "Likely to lose potency, overbuild, or resolve with sloppy side effects."
+            );
+        }
+        return null;
     }
 }

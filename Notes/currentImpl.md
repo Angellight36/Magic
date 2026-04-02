@@ -47,6 +47,10 @@ This file tracks the current state of the Magic prototype so we can see what alr
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockedBlockState.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockedBlockManager.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockingPatternBlocks.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\LockingPatternInteractionGuard.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicStatusCommand.java`
 
 ### 3. Player mana system
@@ -91,6 +95,12 @@ Primary implementation:
 - Weighted spell interpretation exists
 - First-pass resolution plan exists
 - Prototype mana cost and stability scoring exist
+- `/magic analyze` now surfaces:
+  - intent scores
+  - domain scores
+  - recipient scores
+  - source scores
+  - likely failure profile
 - Prototype intent classification exists:
   - `TRAVELING_EFFECT`
   - `BOUNDARY_WARD`
@@ -117,13 +127,31 @@ Primary implementation:
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\PrototypeSpellDefinition.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellFailureType.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellFailureProfile.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellIntent.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellRecipient.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellSource.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellFlowRules.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\InterpretedSpell.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellTrait.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellResolutionPlan.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellInterpreter.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\SpellResolver.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\registry\PrototypeSpellRegistry.java`
+
+Quick reference note:
+
+- `C:\Users\antho\Desktop\Magic\Notes\SpellResolutionReference.md`
+
+Current failure support:
+
+- First-pass likely failure profiles now exist
+- Current failure types in use:
+  - `STRUCTURAL_FAILURE`
+  - `INTERPRETIVE_FAILURE`
+  - `INFORMATION_FAILURE`
+  - `PERSISTENCE_FAILURE`
 
 ### 6. Anchored effect system
 
@@ -197,8 +225,10 @@ Source:
 - Fire traveling chains can still spawn the temporary vanilla `LargeFireball` placeholder when the fireball debug visuals are enabled.
 - Force traveling chains can now strike and knock back a looked-at living target.
 - Restoration chains can heal the caster or a looked-at living target depending on the chain references.
+- Restoration targeting now uses weighted recipient scoring and can resolve ambiguously instead of following one hard rule.
 - Vitality transfer chains can now convert the caster's health into stronger healing for a looked-at target.
-- Pattern interaction chains can manipulate openable block states like doors and trapdoors.
+- Pattern interaction chains can now bind, unlock, or disrupt a persistent magical lock state on openable blocks.
+- Locked blocks now block manual interaction until their magical lock state is removed.
 - Construction chains can now place short prototype stone paths and raised stone walls.
 
 Primary implementation:
@@ -210,7 +240,10 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\debug\MagicDebugSettingsTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainParserTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellFlowRulesTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellInterpreterTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellResolverTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\PatternInteractionRulesTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstanceTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\CoreGlyphRegistryTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\PrototypeSpellRegistryTest.java`

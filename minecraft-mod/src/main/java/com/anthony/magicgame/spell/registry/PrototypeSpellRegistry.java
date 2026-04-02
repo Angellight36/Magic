@@ -28,13 +28,13 @@ public final class PrototypeSpellRegistry {
                     "healing_touch",
                     "Healing Touch",
                     "A first-pass healing chain for living targets.",
-                    List.of("perception", "life", "life_pattern", "refine", "restore", "strengthen", "stabilize")
+                    List.of("perception", "life", "life_pattern", "refine", "strengthen", "stabilize")
             ),
             new PrototypeSpellDefinition(
                     "vitality_exchange",
                     "Vitality Exchange",
                     "Transfers some of the caster's vitality into a seen living target.",
-                    List.of("perception", "self", "seen_target", "life", "life_pattern", "transfer", "restore", "stabilize")
+                    List.of("perception", "self", "life_pattern", "transfer", "life", "refine", "seen_target", "stabilize")
             ),
             new PrototypeSpellDefinition(
                     "unlock",

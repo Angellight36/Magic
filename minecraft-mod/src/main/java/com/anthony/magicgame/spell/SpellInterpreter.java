@@ -36,7 +36,7 @@ public final class SpellInterpreter {
         if (signals.has("release") && !signals.has("separate")) {
             warnings.add("Traveling effects without separation logic are prone to self-harm.");
         }
-        if (signals.has("transfer") && signals.targetedReferenceCount == 0) {
+        if (signals.has("transfer") && !signals.has("seen_target") && !signals.has("chosen_point")) {
             warnings.add("Transfer chains are unstable without a clear recipient or destination.");
         }
         if (signals.has("anchor") && !signals.has("boundary") && !signals.has("field")) {
@@ -48,6 +48,8 @@ public final class SpellInterpreter {
 
         finalizeTraits(signals);
         Map<SpellIntent, Integer> intentScores = scoreIntents(signals);
+        Map<SpellRecipient, Integer> recipientScores = SpellFlowRules.scoreRecipients(spell);
+        Map<SpellSource, Integer> sourceScores = SpellFlowRules.scoreSources(spell);
         RankedIntent rankedIntent = chooseIntent(intentScores);
 
         SpellIntent intent = rankedIntent.intent();
@@ -69,6 +71,8 @@ public final class SpellInterpreter {
                 Set.copyOf(signals.domainScores.keySet()),
                 signals.domainScores,
                 signals.traits,
+                recipientScores,
+                sourceScores,
                 intentScores,
                 rankedIntent.margin(),
                 warnings
@@ -76,7 +80,7 @@ public final class SpellInterpreter {
     }
 
     private static void finalizeTraits(SemanticSignals signals) {
-        if (signals.has("life") || signals.has("restore") || signals.has("refine") || signals.has("strengthen")) {
+        if (signals.has("life") || signals.has("refine") || signals.has("strengthen") || signals.has("restore")) {
             signals.traits.add(SpellTrait.RESTORATIVE);
         }
         if (signals.has("life_pattern") || signals.has("locking_pattern") || signals.has("perception")
@@ -153,34 +157,43 @@ public final class SpellInterpreter {
     private static int restorationScore(SemanticSignals signals) {
         int score = signals.count("life") * 4
                 + signals.count("life_pattern") * 4
-                + signals.count("restore") * 5
+                + signals.count("restore") * 2
                 + signals.count("refine") * 2
                 + signals.count("strengthen") * 2
                 + signals.count("stabilize") * 2
                 + signals.count("gentle") * 1;
-        if (signals.has("life") && (signals.has("life_pattern") || signals.has("restore"))) {
+        if (signals.has("life") && (signals.has("life_pattern") || signals.has("refine") || signals.has("strengthen") || signals.has("restore"))) {
             score += 8;
         }
-        if (signals.has("transfer") && signals.has("self")) {
-            score -= 2;
+        if (signals.has("transfer")) {
+            score -= 6;
+        }
+        if ((signals.has("self") || signals.has("caster")) && signals.has("transfer")) {
+            score -= 4;
         }
         return score;
     }
 
     private static int vitalityTransferScore(SemanticSignals signals) {
         int score = signals.count("life") * 3
-                + signals.count("life_pattern") * 2
-                + signals.count("transfer") * 6
-                + signals.count("restore") * 3
-                + signals.count("self") * 2
-                + signals.count("caster") * 2
-                + signals.targetedReferenceCount * 2
-                + signals.count("stabilize") * 1;
+                + signals.count("life_pattern") * 4
+                + signals.count("transfer") * 8
+                + signals.count("restore") * 1
+                + signals.count("refine") * 2
+                + signals.count("self") * 4
+                + signals.count("caster") * 4
+                + signals.count("seen_target") * 5
+                + signals.targetedReferenceCount * 1
+                + signals.count("stabilize") * 1
+                + signals.count("direct") * 2;
         if (signals.has("transfer") && signals.has("life")) {
-            score += 5;
+            score += 7;
         }
-        if ((signals.has("self") || signals.has("caster")) && signals.targetedReferenceCount > 0) {
-            score += 8;
+        if ((signals.has("self") || signals.has("caster")) && signals.has("seen_target")) {
+            score += 10;
+        }
+        if ((signals.has("self") || signals.has("caster")) && signals.has("life_pattern") && signals.has("transfer")) {
+            score += 6;
         }
         return score;
     }

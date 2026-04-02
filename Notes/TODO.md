@@ -7,9 +7,12 @@
 ## Planning backlog
 
 - Keep `Notes/currentImpl.md` current as systems, JSON assets, and data-driven content are added.
+- Keep `Notes/SpellResolutionReference.md` current as we retune intent, source, and recipient scoring.
 - Build real spell authoring UI once we move past the temporary command-driven workflow.
 - Build visible world interactions on top of the anchored effect framework, including magical scars and richer ward behavior.
 - Keep tuning the weighted interpreter as more glyphs, rituals, and mixed-purpose spell chains are added.
+- Expand the magical lock system beyond doors/openables so locks, seals, keyed runes, and cursed bindings share one pattern-state model.
+- Move more execution preconditions out of `MagicCommand` and into testable spell/runtime rule helpers.
 - Split the prototype cast effects out of `MagicCommand` into dedicated execution/targeting systems once the spell runtime grows beyond command-only testing.
 - Tighten temporary ward trigger filtering once solo testing no longer needs "any non-owner entity" detection.
 - Replace temporary vanilla placeholders when asset work begins:

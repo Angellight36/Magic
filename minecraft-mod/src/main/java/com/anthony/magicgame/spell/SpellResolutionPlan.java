@@ -9,6 +9,7 @@ import java.util.List;
  * @param primaryDomain best-fit execution domain for the current spell
  * @param manaCost prototype mana cost estimate
  * @param stabilityScore rough 0-100 stability estimate used for early balancing
+ * @param likelyFailureProfile most likely failure mode if the spell resolves poorly
  * @param warnings important resolution warnings to surface to the player or developer
  */
 public record SpellResolutionPlan(
@@ -16,6 +17,7 @@ public record SpellResolutionPlan(
         MagicDomain primaryDomain,
         int manaCost,
         int stabilityScore,
+        SpellFailureProfile likelyFailureProfile,
         List<String> warnings
 ) {
     public SpellResolutionPlan {

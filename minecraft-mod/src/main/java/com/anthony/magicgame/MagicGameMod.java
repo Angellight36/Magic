@@ -3,7 +3,9 @@ package com.anthony.magicgame;
 import com.anthony.magicgame.command.MagicCommand;
 import com.anthony.magicgame.command.MagicStatusCommand;
 import com.anthony.magicgame.mana.ManaRegenerationService;
+import com.anthony.magicgame.network.MagicNetworking;
 import com.anthony.magicgame.spell.effect.AnchoredEffectTicker;
+import com.anthony.magicgame.spell.pattern.LockingPatternInteractionGuard;
 import com.anthony.magicgame.spell.registry.CoreGlyphRegistry;
 import com.anthony.magicgame.spell.registry.PrototypeSpellRegistry;
 import net.fabricmc.api.ModInitializer;
@@ -19,8 +21,10 @@ public final class MagicGameMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        MagicNetworking.register();
         ManaRegenerationService.register();
         AnchoredEffectTicker.register();
+        LockingPatternInteractionGuard.register();
         MagicCommand.register();
         MagicStatusCommand.register();
 

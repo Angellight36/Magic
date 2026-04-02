@@ -10,9 +10,16 @@ import com.anthony.magicgame.spell.GlyphDefinition;
 import com.anthony.magicgame.spell.PrototypeSpellDefinition;
 import com.anthony.magicgame.spell.SpellChain;
 import com.anthony.magicgame.spell.SpellChainParser;
+import com.anthony.magicgame.spell.SpellFlowRules;
 import com.anthony.magicgame.spell.SpellIntent;
+import com.anthony.magicgame.spell.SpellRecipient;
 import com.anthony.magicgame.spell.SpellResolutionPlan;
 import com.anthony.magicgame.spell.SpellResolver;
+import com.anthony.magicgame.spell.SpellSource;
+import com.anthony.magicgame.spell.SpellTargetingRules;
+import com.anthony.magicgame.spell.PatternInteractionRules;
+import com.anthony.magicgame.spell.pattern.LockedBlockManager;
+import com.anthony.magicgame.spell.pattern.LockingPatternBlocks;
 import com.anthony.magicgame.spell.effect.AnchoredEffectInstance;
 import com.anthony.magicgame.spell.effect.AnchoredEffectKind;
 import com.anthony.magicgame.spell.effect.AnchoredEffectManager;
@@ -429,6 +436,23 @@ public final class MagicCommand {
                         .reduce((left, right) -> left + ", " + right)
                         .orElse("(none)")
         ), false);
+        source.sendSuccess(() -> Component.literal(
+                "Intent scores: " + formatScoreMap(plan.interpretedSpell().intentScores())
+        ), false);
+        source.sendSuccess(() -> Component.literal(
+                "Domain scores: " + formatScoreMap(plan.interpretedSpell().domainScores())
+        ), false);
+        source.sendSuccess(() -> Component.literal(
+                "Recipient scores: " + formatScoreMap(plan.interpretedSpell().recipientScores())
+        ), false);
+        source.sendSuccess(() -> Component.literal(
+                "Source scores: " + formatScoreMap(plan.interpretedSpell().sourceScores())
+        ), false);
+        if (plan.likelyFailureProfile() != null) {
+            source.sendSuccess(() -> Component.literal(
+                    "Likely failure: " + formatFailureProfile(plan.likelyFailureProfile())
+            ), false);
+        }
         showWarnings(source, plan);
     }
 
@@ -555,7 +579,7 @@ public final class MagicCommand {
 
         float healAmount = 4.0F;
         if (hasGlyph(spell, "restore")) {
-            healAmount += 2.0F;
+            healAmount += 1.0F;
         }
         if (hasGlyph(spell, "strengthen")) {
             healAmount += 1.0F;
@@ -594,7 +618,10 @@ public final class MagicCommand {
         }
 
         player.hurtServer(level, level.damageSources().magic(), selfCost);
-        float healAmount = selfCost + 3.0F + (hasGlyph(spell, "restore") ? 1.0F : 0.0F);
+        float healAmount = selfCost + 3.0F;
+        if (hasGlyph(spell, "refine")) {
+            healAmount += 1.0F;
+        }
         target.heal(healAmount);
         if (hasGlyph(spell, "strengthen")) {
             target.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, 200, 0));
@@ -618,36 +645,56 @@ public final class MagicCommand {
             return;
         }
 
-        BlockPos pos = hit.getBlockPos();
+        BlockPos pos = LockingPatternBlocks.canonicalize(level, hit.getBlockPos());
         BlockState state = level.getBlockState(pos);
-        if (!state.hasProperty(BlockStateProperties.OPEN)) {
+        if (!LockingPatternBlocks.isLockable(state)) {
             player.sendSystemMessage(Component.literal(
                     "[debug] Targeted block has no open/closed pattern to manipulate."
             ));
             return;
         }
 
-        boolean desiredOpen = hasGlyph(spell, "gentle") || hasGlyph(spell, "separate") || !state.getValue(BlockStateProperties.OPEN);
-        if (state.getValue(BlockStateProperties.OPEN) == desiredOpen) {
-            player.sendSystemMessage(Component.literal(
-                    "[debug] The targeted structure is already in the requested state."
+        LockedBlockManager lockManager = LockedBlockManager.get(level.getServer());
+        PatternInteractionRules.PatternInteractionMode mode = PatternInteractionRules.classifyMode(spell);
+        switch (mode) {
+            case LOCK -> {
+                boolean changed = lockManager.lock(level, pos);
+                level.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5D, pos.getY() + 0.6D, pos.getZ() + 0.5D, 12, 0.25D, 0.3D, 0.25D, 0.02D);
+                level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.9F, 0.75F);
+                player.sendSystemMessage(Component.literal(
+                        changed
+                                ? "[debug] Bound a locking pattern onto the target."
+                                : "[debug] The target is already held by a locking pattern."
+                ));
+            }
+            case UNLOCK -> {
+                boolean changed = lockManager.unlock(level, pos);
+                if (!changed) {
+                    player.sendSystemMessage(Component.literal(
+                            "[debug] No active locking pattern was found on the target."
+                    ));
+                    return;
+                }
+                level.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5D, pos.getY() + 0.6D, pos.getZ() + 0.5D, 12, 0.25D, 0.3D, 0.25D, 0.02D);
+                level.playSound(null, pos, SoundEvents.IRON_DOOR_OPEN, SoundSource.BLOCKS, 1.0F, hasGlyph(spell, "gentle") ? 1.15F : 0.95F);
+                player.sendSystemMessage(Component.literal(
+                        "[debug] Reduced or removed the target's locking pattern."
+                ));
+            }
+            case DISRUPT -> {
+                boolean changed = lockManager.unlock(level, pos);
+                level.sendParticles(ParticleTypes.CRIT, pos.getX() + 0.5D, pos.getY() + 0.6D, pos.getZ() + 0.5D, 14, 0.25D, 0.3D, 0.25D, 0.04D);
+                level.playSound(null, pos, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.BLOCKS, 0.9F, 0.75F);
+                player.sendSystemMessage(Component.literal(
+                        changed
+                                ? "[debug] Disrupted the target's locking pattern."
+                                : "[debug] The pattern discharge scattered across the target harmlessly."
+                ));
+            }
+            case NONE -> player.sendSystemMessage(Component.literal(
+                    "[debug] Pattern interaction found no clear locking behavior to resolve."
             ));
-            return;
         }
-
-        level.setBlock(pos, state.setValue(BlockStateProperties.OPEN, desiredOpen), 3);
-        level.sendParticles(ParticleTypes.ENCHANT, pos.getX() + 0.5D, pos.getY() + 0.6D, pos.getZ() + 0.5D, 12, 0.25D, 0.3D, 0.25D, 0.02D);
-        level.playSound(
-                null,
-                pos,
-                desiredOpen ? SoundEvents.IRON_DOOR_OPEN : SoundEvents.IRON_DOOR_CLOSE,
-                SoundSource.BLOCKS,
-                1.0F,
-                hasGlyph(spell, "gentle") ? 1.2F : 0.9F
-        );
-        player.sendSystemMessage(Component.literal(
-                "[debug] Reworked the target block's locking pattern."
-        ));
     }
 
     private static void runConstructionEffect(ServerPlayer player, ServerLevel level, SpellChain spell) {
@@ -700,18 +747,23 @@ public final class MagicCommand {
     }
 
     private static LivingEntity resolveRestorationTarget(ServerPlayer player, ServerLevel level, SpellChain spell) {
-        boolean explicitlySelf = hasGlyph(spell, "self") || hasGlyph(spell, "caster");
-        boolean explicitlyTargeted = hasGlyph(spell, "seen_target");
-        if (explicitlyTargeted) {
-            LivingEntity target = findLivingTargetInLook(player, level, 10.0D);
-            if (target != null) {
-                return target;
-            }
+        LivingEntity lookTarget = findLivingTargetInLook(player, level, 10.0D);
+        SpellTargetingRules.RestorationTargetWeights weights = SpellFlowRules.restorationTargetWeights(
+                SpellFlowRules.scoreRecipients(spell),
+                lookTarget != null
+        );
+        if (weights.totalWeight() <= 0) {
+            return null;
         }
-        if (explicitlySelf || !explicitlyTargeted) {
-            return player;
-        }
-        return null;
+        SpellTargetingRules.RestorationTargetChoice choice = SpellTargetingRules.chooseRestorationTarget(
+                weights,
+                player.getRandom().nextInt(weights.totalWeight())
+        );
+        return switch (choice) {
+            case SELF -> player;
+            case LOOK_TARGET -> lookTarget;
+            case NONE -> null;
+        };
     }
 
     private static LivingEntity findLivingTargetInLook(ServerPlayer player, ServerLevel level, double maxDistance) {
@@ -817,5 +869,28 @@ public final class MagicCommand {
 
     private static boolean hasGlyph(SpellChain spell, String glyphId) {
         return spell.glyphs().stream().anyMatch(glyph -> glyph.id().equals(glyphId));
+    }
+
+    private static String formatScoreMap(Map<?, Integer> scores) {
+        return scores.entrySet().stream()
+                .filter(entry -> entry.getValue() > 0)
+                .sorted((left, right) -> {
+                    int byValue = Integer.compare(right.getValue(), left.getValue());
+                    if (byValue != 0) {
+                        return byValue;
+                    }
+                    return left.getKey().toString().compareTo(right.getKey().toString());
+                })
+                .map(entry -> entry.getKey() + "=" + entry.getValue())
+                .reduce((left, right) -> left + ", " + right)
+                .orElse("(none)");
+    }
+
+    private static String formatFailureProfile(com.anthony.magicgame.spell.SpellFailureProfile failureProfile) {
+        return failureProfile.failureType()
+                + " (severity " + failureProfile.severity()
+                + ", domain " + failureProfile.domain()
+                + ") | " + failureProfile.description()
+                + " | " + failureProfile.gameplayOutcome();
     }
 }
