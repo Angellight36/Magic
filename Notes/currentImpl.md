@@ -13,6 +13,7 @@ This file tracks the current state of the Magic prototype so we can see what alr
   - `C:\Users\antho\Desktop\Magic\MagicOverviewAndLore.md`
 - Focused system notes:
   - `C:\Users\antho\Desktop\Magic\Notes\CastingFocusAndMana.md`
+  - `C:\Users\antho\Desktop\Magic\Notes\CurrentPlaytestFindings.md`
   - `C:\Users\antho\Desktop\Magic\Notes\SpellResolutionReference.md`
   - `C:\Users\antho\Desktop\Magic\Notes\LocksAndKeys.md`
   - `C:\Users\antho\Desktop\Magic\Notes\EffectRuntimeAudit.md`

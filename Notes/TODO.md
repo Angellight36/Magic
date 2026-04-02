@@ -8,6 +8,7 @@
 
 - Keep `Notes/currentImpl.md` current as systems, JSON assets, and data-driven content are added.
 - Keep `Notes/CastingFocusAndMana.md` current as focus rules, concentration, explicit mana supply, and ward feeding evolve.
+- Keep `Notes/CurrentPlaytestFindings.md` current as new playtest-visible bugs and design pressure points are discovered.
 - Keep `Notes/SpellResolutionReference.md` current as we retune intent, source, and recipient scoring.
 - Keep `Notes/LocksAndKeys.md` current as keyed locks, physical locks, and future seal types evolve.
 - Keep `Notes/EffectRuntimeAudit.md` current as we replace placeholder visuals and tighten owned gameplay mechanics.
@@ -20,6 +21,12 @@
 - Keep tuning the weighted interpreter as more glyphs, rituals, and mixed-purpose spell chains are added.
 - Add explicit mana-source and mana-feed semantics so spells can declare whether they draw from self, ambient supply, stored sources, or continuous channels.
 - Add glyph vocabulary for `mana`, ambient/environment references, quantity/measure, and maintained channels so spells like `flare` and sustained wards can differentiate cleanly from `fireball`.
+- Fix the current item texture/resource path problems so placeholder art actually renders instead of missing-texture cubes.
+- Rework keyed lock lifecycle so unlocking with a matching key does not permanently discard the keyed lock state, and evaluate multi-lock entryways.
+- Remove the brief graphical open-state flicker when interacting with locked doors.
+- Deepen targeting resolution so low-cost healing is not effectively lay-on-hands and offensive spells can self-hit when cast into nearby geometry or at the caster's feet.
+- Replace the current rigid `stone_path` prototype rules with chain-driven span, length, and constructive-placement semantics.
+- Design bridge building as a multi-step interpreted construction process with glyph-resolvable steps for endpoints, line drawing, arc shaping, thickening, and execution.
 - Expand the generalized block pattern tag system beyond `MAGIC_LOCKED`, including seals, keyed runes, cursed bindings, and future entity-facing tags.
 - Decide which non-plant block families should become first-class tag targets beyond the current open/powered/extended/container heuristics.
 - Add lock strength / unlock resistance so physical and magical locks can diverge meaningfully later.
