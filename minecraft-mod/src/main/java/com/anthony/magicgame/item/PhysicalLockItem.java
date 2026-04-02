@@ -2,7 +2,8 @@ package com.anthony.magicgame.item;
 
 import com.anthony.magicgame.spell.pattern.LockKeying;
 import com.anthony.magicgame.spell.pattern.LockedBlockManager;
-import com.anthony.magicgame.spell.pattern.LockingPatternBlocks;
+import com.anthony.magicgame.spell.pattern.PatternTaggedBlocks;
+import java.util.UUID;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -11,10 +12,11 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 
 /**
- * Prototype physical lock item that applies the same persistent locked-state used by spell locks.
+ * Prototype physical lock item that applies a keyed lock to entryways and container-style targets.
  */
 public class PhysicalLockItem extends Item {
     public PhysicalLockItem(Properties properties) {
@@ -27,10 +29,10 @@ public class PhysicalLockItem extends Item {
             return InteractionResult.SUCCESS;
         }
 
-        BlockPos pos = LockingPatternBlocks.canonicalize(level, context.getClickedPos());
-        if (!LockingPatternBlocks.isLockable(level, pos)) {
+        BlockPos pos = PatternTaggedBlocks.canonicalize(level, context.getClickedPos());
+        if (!PatternTaggedBlocks.supportsPhysicalLock(level, pos)) {
             player.sendSystemMessage(Component.literal(
-                    "That block has no lockable pattern for a physical lock to grip."
+                    "Physical locks currently only fit entryways and chest-like containers."
             ));
             return InteractionResult.FAIL;
         }
@@ -43,23 +45,32 @@ public class PhysicalLockItem extends Item {
             return InteractionResult.FAIL;
         }
 
-        String keySignature = RuneKeyItem.findAnyAttunedSignature(player, context.getHand());
-        boolean changed = keySignature == null
-                ? lockManager.lock(level, pos)
-                : lockManager.lockWithKey(level, pos, keySignature);
+        String keySignature = LinkedKeyItem.findAnyLinkedSignature(player, context.getHand());
+        boolean mintedNewKey = keySignature == null;
+        if (mintedNewKey) {
+            keySignature = UUID.randomUUID().toString();
+        }
+
+        boolean changed = lockManager.lockWithKey(level, pos, keySignature);
         if (!changed) {
             return InteractionResult.FAIL;
         }
 
         level.playSound(null, pos, SoundEvents.CHAIN_PLACE, SoundSource.BLOCKS, 0.9F, 0.85F);
+        if (mintedNewKey) {
+            ItemStack newKey = LinkedKeyItem.createKeyStack(keySignature);
+            if (!player.getInventory().add(newKey)) {
+                player.drop(newKey, false);
+            }
+        }
         if (!player.getAbilities().instabuild) {
             context.getItemInHand().shrink(1);
         }
 
         player.sendSystemMessage(Component.literal(
-                keySignature == null
-                        ? "Applied a physical lock to the target."
-                        : "Applied a keyed physical lock attuned to " + LockKeying.displaySignature(keySignature) + "."
+                mintedNewKey
+                        ? "Applied a keyed physical lock and minted linked key " + LockKeying.displaySignature(keySignature) + "."
+                        : "Applied a keyed physical lock attuned to linked key " + LockKeying.displaySignature(keySignature) + "."
         ));
         return InteractionResult.SUCCESS;
     }

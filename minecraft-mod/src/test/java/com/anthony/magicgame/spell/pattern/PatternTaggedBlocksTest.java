@@ -53,6 +53,26 @@ class PatternTaggedBlocksTest {
     }
 
     @Test
+    void physicalLocksStayOnEntrywaysAndContainers() {
+        assertTrue(PatternTaggedBlocks.supportsPhysicalLockState(
+                Blocks.OAK_DOOR.defaultBlockState(),
+                false
+        ));
+        assertTrue(PatternTaggedBlocks.supportsPhysicalLockState(
+                Blocks.CHEST.defaultBlockState(),
+                true
+        ));
+        assertFalse(PatternTaggedBlocks.supportsPhysicalLockState(
+                Blocks.LEVER.defaultBlockState(),
+                false
+        ));
+        assertFalse(PatternTaggedBlocks.supportsPhysicalLockState(
+                Blocks.PISTON.defaultBlockState(),
+                false
+        ));
+    }
+
+    @Test
     void containersSupportMagicLockTag() {
         assertTrue(PatternTaggedBlocks.supportsTagState(
                 Blocks.CHEST.defaultBlockState(),

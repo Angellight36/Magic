@@ -21,6 +21,20 @@ public final class PatternTaggedBlocks {
         return supportsTagState(state, hasTaggableContainer, tag);
     }
 
+    /**
+     * Returns whether the current block can host a player-applied physical lock.
+     *
+     * @param level target level
+     * @param pos target block position
+     * @return true when the target currently supports a physical lock
+     */
+    public static boolean supportsPhysicalLock(ServerLevel level, BlockPos pos) {
+        BlockPos canonicalPos = canonicalize(level, pos);
+        BlockState state = level.getBlockState(canonicalPos);
+        boolean hasTaggableContainer = level.getBlockEntity(canonicalPos) instanceof Container;
+        return supportsPhysicalLockState(state, hasTaggableContainer);
+    }
+
     public static boolean supportsTagState(BlockState state, boolean hasTaggableContainer, BlockPatternTag tag) {
         return switch (tag) {
             case MAGIC_LOCKED -> state.hasProperty(BlockStateProperties.OPEN)
@@ -28,6 +42,17 @@ public final class PatternTaggedBlocks {
                     || state.hasProperty(BlockStateProperties.EXTENDED)
                     || hasTaggableContainer;
         };
+    }
+
+    /**
+     * Returns whether the block should accept a physical key-and-lock pairing.
+     *
+     * @param state target block state
+     * @param hasTaggableContainer true when the block is backed by a container
+     * @return true for entryways and container-like blocks only
+     */
+    public static boolean supportsPhysicalLockState(BlockState state, boolean hasTaggableContainer) {
+        return state.hasProperty(BlockStateProperties.OPEN) || hasTaggableContainer;
     }
 
     public static BlockPos canonicalize(ServerLevel level, BlockPos pos) {

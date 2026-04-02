@@ -9,7 +9,8 @@ import java.util.List;
 public enum MagicDebugFeature {
     WARD_MESSAGES("ward_messages"),
     WARD_BOUNDARY_PARTICLES("ward_boundary_particles"),
-    FIREBALL_VISUALS("fireball_visuals");
+    FIREBALL_VISUALS("fireball_visuals"),
+    LOCK_STATE_PARTICLES("lock_state_particles");
 
     private final String id;
 

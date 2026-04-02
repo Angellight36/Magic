@@ -2,6 +2,7 @@ package com.anthony.magicgame;
 
 import com.anthony.magicgame.command.MagicCommand;
 import com.anthony.magicgame.command.MagicStatusCommand;
+import com.anthony.magicgame.debug.LockDebugTicker;
 import com.anthony.magicgame.item.MagicItems;
 import com.anthony.magicgame.mana.ManaRegenerationService;
 import com.anthony.magicgame.network.MagicNetworking;
@@ -28,6 +29,7 @@ public final class MagicGameMod implements ModInitializer {
         ManaRegenerationService.register();
         AnchoredEffectTicker.register();
         BlockPatternTagTicker.register();
+        LockDebugTicker.register();
         LockingPatternInteractionGuard.register();
         MagicCommand.register();
         MagicStatusCommand.register();

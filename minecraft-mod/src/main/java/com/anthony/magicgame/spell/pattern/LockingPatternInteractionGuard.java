@@ -1,6 +1,6 @@
 package com.anthony.magicgame.spell.pattern;
 
-import com.anthony.magicgame.item.RuneKeyItem;
+import com.anthony.magicgame.item.LinkedKeyItem;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -34,11 +34,11 @@ public final class LockingPatternInteractionGuard {
 
             String requiredSignature = lockManager.keySignature(level, hitResult.getBlockPos());
             if (requiredSignature != null) {
-                String presentedSignature = RuneKeyItem.findMatchingSignature(serverPlayer, requiredSignature);
+                String presentedSignature = LinkedKeyItem.findMatchingSignature(serverPlayer, requiredSignature);
                 if (LockKeying.matches(requiredSignature, presentedSignature)) {
                     lockManager.unlockWithKey(level, hitResult.getBlockPos(), presentedSignature);
                     serverPlayer.sendSystemMessage(Component.literal(
-                            "The keyed lock yields to rune " + LockKeying.displaySignature(presentedSignature) + "."
+                            "The keyed lock yields to linked key " + LockKeying.displaySignature(presentedSignature) + "."
                     ));
                     return InteractionResult.PASS;
                 }

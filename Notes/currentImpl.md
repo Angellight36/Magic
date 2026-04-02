@@ -51,7 +51,7 @@ Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicItems.java`
-- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\RuneKeyItem.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\LinkedKeyItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\PhysicalLockItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\BlockPatternTag.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\TaggedBlockPatternState.java`
@@ -194,6 +194,7 @@ Primary implementation:
   - `fireball_visuals`
   - `fireball_trail_particles`
   - `fireball_launch_sound`
+  - `lock_state_particles`
   - `mana_hud_text`
   - `spell_feedback_text`
 
@@ -248,10 +249,14 @@ Source:
 - Container-backed blocks can still be tagged and blocked from manual interaction even when there is no useful open/closed property to freeze.
 - Locked blocks now block manual interaction until their magical lock state is removed.
 - Prototype keying now exists on top of the same lock state:
-  - `rune_key` can be attuned to a persistent signature
-  - `physical_lock` can apply the same lock state by item use
-  - holding a matching keyed rune can unlock keyed locks during interaction
+  - `linked_key` carries a persistent lock signature
+  - `physical_lock` can apply a keyed lock and mint the first linked key when needed
+  - another linked key plus one iron ingot can craft a copied linked key with the same signature
+  - holding a matching linked key can unlock keyed locks during interaction
 - Physical locks intentionally have no special resistance advantage over spell locks yet; they are currently an alternate application method.
+- Physical locks are currently limited to entryways and chest-like containers.
+- Levers, pistons, and similar mechanisms remain magic-lock-only right now.
+- A targeted lock debug view can now show red particles for locked physical-lock targets and green particles for unlocked ones.
 - Construction chains can now place short prototype stone paths and raised stone walls.
 
 Primary implementation:
@@ -261,7 +266,7 @@ Primary implementation:
 ### 11. Prototype item and recipe foundation
 
 - First custom items now exist:
-  - `rune_key`
+  - `linked_key`
   - `physical_lock`
 - First manual data JSONs now exist for:
   - item models
@@ -272,18 +277,20 @@ Primary implementation:
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicItems.java`
-- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\RuneKeyItem.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\LinkedKeyItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\PhysicalLockItem.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicRecipeSerializers.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\LinkedKeyCopyRecipe.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\lang\en_us.json`
-- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\rune_key.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\linked_key.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
-- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\rune_key.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\linked_key_copying.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\physical_lock.json`
 
 ### 12. Tests currently in place
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\debug\MagicDebugSettingsTest.java`
-- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\RuneKeyItemTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\LinkedKeyItemTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainParserTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellFlowRulesTest.java`
@@ -307,14 +314,14 @@ Primary implementation:
 2. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\lang\en_us.json`
    - Current English names for prototype custom items.
 
-3. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\rune_key.json`
+3. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\linked_key.json`
    - Prototype generated item model using a placeholder vanilla texture.
 
 4. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
    - Prototype generated item model using a placeholder vanilla texture.
 
-5. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\rune_key.json`
-   - Crafting recipe for the rune key.
+5. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\linked_key_copying.json`
+   - Special crafting recipe for copying a linked key from another linked key plus iron.
 
 6. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\physical_lock.json`
    - Crafting recipe for the physical lock.
@@ -330,7 +337,7 @@ Primary implementation:
 
 - Current assets:
   - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\icon.png`
-  - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\rune_key.json`
+  - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\linked_key.json`
   - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
 
 ## Temporary vanilla placeholders that need replacement later
@@ -341,8 +348,8 @@ Primary implementation:
 - `fireball` debug visualization currently uses vanilla `LargeFireball`
 - `fireball` launch feedback currently uses vanilla `FLAME` and `SMOKE` particles
 - `fireball` launch feedback currently uses vanilla `BLAZE_SHOOT`
-- `rune_key` currently uses the vanilla `amethyst_shard` texture through a generated item model
-- `physical_lock` currently uses the vanilla `tripwire_hook` texture through a generated item model
+- `linked_key` currently uses the vanilla `tripwire_hook` texture through a generated item model
+- `physical_lock` currently uses the vanilla `iron_door_top` texture through a generated item model
 - mana and spell state currently use a temporary text HUD instead of final art
 - Ward activation currently uses debug system chat messages instead of custom UI/audio
 

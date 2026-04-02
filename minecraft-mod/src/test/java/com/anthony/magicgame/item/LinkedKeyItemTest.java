@@ -12,9 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Covers persistent signature storage for rune keys.
+ * Covers persistent signature storage for linked keys.
  */
-class RuneKeyItemTest {
+class LinkedKeyItemTest {
     @BeforeAll
     static void bootstrapMinecraftRegistries() {
         SharedConstants.tryDetectVersion();
@@ -24,11 +24,11 @@ class RuneKeyItemTest {
     @Test
     void signatureRoundTripsThroughCustomData() {
         ItemStack stack = new ItemStack(Items.STICK);
-        assertNull(RuneKeyItem.getSignature(stack));
+        assertNull(LinkedKeyItem.getSignature(stack));
 
-        RuneKeyItem.setSignature(stack, "test-signature-1234");
+        LinkedKeyItem.setSignature(stack, "test-signature-1234");
 
-        assertEquals("test-signature-1234", RuneKeyItem.getSignature(stack));
+        assertEquals("test-signature-1234", LinkedKeyItem.getSignature(stack));
         assertTrue(stack.getHoverName().getString().contains("TEST-SIG"));
     }
 }

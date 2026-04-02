@@ -1,7 +1,7 @@
 package com.anthony.magicgame.spell.pattern;
 
 /**
- * Shared helpers for keyed locks and keyed rune presentation.
+ * Shared helpers for keyed locks and linked-key presentation.
  */
 public final class LockKeying {
     private static final int DISPLAY_SIGNATURE_LENGTH = 8;

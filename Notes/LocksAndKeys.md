@@ -6,7 +6,7 @@ It exists because lock behavior now spans:
 
 - spell pattern interaction
 - persistent block pattern tags
-- keyed rune items
+- linked key items
 - physical lock items
 
 ## Current lock model
@@ -58,8 +58,8 @@ Item:
 Current result:
 
 - applies the same `MAGIC_LOCKED` tag as a spell lock
-- if the player is carrying an attuned rune key in the other hand, the lock becomes keyed to that signature
-- if no attuned key is present, the lock is unkeyed
+- if the player is carrying a linked key in the other hand, the lock becomes keyed to that signature
+- otherwise the first application mints a fresh linked key and binds the new lock to it
 
 There is intentionally no special durability or resistance layer yet. For now it is mainly a different delivery method for the same locked state.
 
@@ -67,11 +67,12 @@ There is intentionally no special durability or resistance layer yet. For now it
 
 Item:
 
-- `rune_key`
+- `linked_key`
 
 Current behavior:
 
-- first use in air attunes the key to a generated signature
+- physical locks mint the first linked key when they are applied without an existing key
+- another linked key plus one iron ingot can craft a copied linked key with the same signature
 - the key keeps that signature in item custom data
 - the key also gets a visible shortened label so players can tell keys apart
 
@@ -79,7 +80,7 @@ Current behavior:
 
 If a locked block has a stored key signature:
 
-- interacting while holding a rune key with the exact same signature removes the lock
+- interacting while holding a linked key with the exact same signature removes the lock
 - after that, normal block interaction is allowed to continue
 
 If a lock has no stored key signature:
@@ -98,12 +99,22 @@ The `MAGIC_LOCKED` tag currently supports:
 - pistons and other extendable blocks
 - container-backed blocks like chests
 
+Physical locks and linked keys are currently narrower:
+
+- doors
+- trapdoors
+- fence gates
+- chest-like container blocks
+
+Levers and pistons remain magic-lock-only for now.
+
 ## Automation and redstone
 
 Current behavior:
 
 - blocks with stored `open`, `powered`, or `extended` state are re-enforced by the tag ticker
 - this gives the current lock system a first-pass resistance to redstone or automation-driven state changes
+- the debug lock-state view can show a red particle for a locked targeted entryway and a green one for an unlocked target
 
 Current limitation:
 

@@ -12,15 +12,16 @@ import net.minecraft.world.item.Item;
  * Registers the prototype items used by the current magic systems.
  */
 public final class MagicItems {
-    public static final Item RUNE_KEY = register("rune_key", new RuneKeyItem(new Item.Properties().stacksTo(1)));
+    public static final Item LINKED_KEY = register("linked_key", new LinkedKeyItem(new Item.Properties().stacksTo(1)));
     public static final Item PHYSICAL_LOCK = register("physical_lock", new PhysicalLockItem(new Item.Properties()));
 
     private MagicItems() {
     }
 
     public static void register() {
+        MagicRecipeSerializers.register();
         ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES).register(entries -> {
-            entries.accept(RUNE_KEY);
+            entries.accept(LINKED_KEY);
             entries.accept(PHYSICAL_LOCK);
         });
     }
