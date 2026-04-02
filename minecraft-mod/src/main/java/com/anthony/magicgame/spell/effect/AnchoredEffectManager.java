@@ -8,9 +8,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.datafix.DataFixTypes;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
@@ -80,34 +85,41 @@ public final class AnchoredEffectManager extends SavedData {
 
     private boolean tickAlertWard(MinecraftServer server, AnchoredEffectInstance effect) {
         MagicDebugSettings debugSettings = MagicDebugSettings.get(server);
+        ServerLevel level = findLevel(server, effect);
+        if (level == null) {
+            return false;
+        }
+
         if (debugSettings.isFeatureActive(MagicDebugFeature.WARD_BOUNDARY_PARTICLES)) {
             renderWardBoundary(server, effect);
         }
 
         List<String> occupants = new ArrayList<>();
-        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            String playerDimension = player.level().dimension().identifier().toString();
-            if (!effect.matchesDimension(playerDimension) || effect.ownerMatches(player.getUUID())) {
-                continue;
-            }
-            if (effect.contains(player.getX(), player.getY(), player.getZ())) {
-                occupants.add(player.getUUID().toString());
+        for (Entity entity : level.getEntities((Entity) null, boundsFor(effect), entity -> shouldTrackWardEntity(effect, entity))) {
+            if (effect.contains(entity.getX(), entity.getY(), entity.getZ())) {
+                occupants.add(entity.getUUID().toString());
             }
         }
 
         boolean changed = false;
         for (String entrantId : effect.updateOccupants(occupants)) {
             UUID uuid = UUID.fromString(entrantId);
-            ServerPlayer entrant = server.getPlayerList().getPlayer(uuid);
+            Entity entrant = level.getEntity(uuid);
             ServerPlayer owner = server.getPlayerList().getPlayer(UUID.fromString(effect.ownerId()));
+            if (debugSettings.isFeatureActive(MagicDebugFeature.WARD_ACTIVATION_PARTICLES)) {
+                renderWardActivation(server, effect);
+            }
+            if (debugSettings.isFeatureActive(MagicDebugFeature.WARD_ACTIVATION_SOUND)) {
+                playWardActivationSound(server, effect);
+            }
             if (owner != null && debugSettings.isFeatureActive(MagicDebugFeature.WARD_MESSAGES)) {
                 owner.sendSystemMessage(net.minecraft.network.chat.Component.literal(
                         "[debug] Ward Activated @" + effect.x() + ", " + effect.y() + ", " + effect.z()
                                 + " by @" + (entrant == null ? entrantId : entrant.getName().getString())
                 ));
             }
-            if (entrant != null && debugSettings.isFeatureActive(MagicDebugFeature.WARD_MESSAGES)) {
-                entrant.sendSystemMessage(net.minecraft.network.chat.Component.literal(
+            if (entrant instanceof ServerPlayer entrantPlayer && debugSettings.isFeatureActive(MagicDebugFeature.WARD_MESSAGES)) {
+                entrantPlayer.sendSystemMessage(net.minecraft.network.chat.Component.literal(
                         "[debug] You triggered a ward @" + effect.x() + ", " + effect.y() + ", " + effect.z() + "."
                 ));
             }
@@ -145,5 +157,70 @@ public final class AnchoredEffectManager extends SavedData {
             level.sendParticles(ParticleTypes.ENCHANT, centerX, centerY + 0.4D, centerZ, 4, 0.2D, 0.2D, 0.2D, 0.0D);
             return;
         }
+    }
+
+    private void renderWardActivation(MinecraftServer server, AnchoredEffectInstance effect) {
+        ServerLevel level = findLevel(server, effect);
+        if (level == null) {
+            return;
+        }
+
+        double centerX = effect.x() + 0.5D;
+        double centerY = effect.y() + 0.5D;
+        double centerZ = effect.z() + 0.5D;
+        level.sendParticles(ParticleTypes.CRIT, centerX, centerY + 0.4D, centerZ, 16, 0.35D, 0.2D, 0.35D, 0.02D);
+        level.sendParticles(ParticleTypes.END_ROD, centerX, centerY + 0.8D, centerZ, 8, 0.15D, 0.15D, 0.15D, 0.01D);
+    }
+
+    private void playWardActivationSound(MinecraftServer server, AnchoredEffectInstance effect) {
+        ServerLevel level = findLevel(server, effect);
+        if (level == null) {
+            return;
+        }
+
+        level.playSound(
+                null,
+                effect.x() + 0.5D,
+                effect.y() + 0.5D,
+                effect.z() + 0.5D,
+                SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundSource.BLOCKS,
+                1.0F,
+                1.25F
+        );
+    }
+
+    private ServerLevel findLevel(MinecraftServer server, AnchoredEffectInstance effect) {
+        for (ServerLevel level : server.getAllLevels()) {
+            if (level.dimension().identifier().toString().equals(effect.dimensionId())) {
+                return level;
+            }
+        }
+        return null;
+    }
+
+    private AABB boundsFor(AnchoredEffectInstance effect) {
+        double radius = effect.radius();
+        double centerX = effect.x() + 0.5D;
+        double centerY = effect.y() + 0.5D;
+        double centerZ = effect.z() + 0.5D;
+        return new AABB(
+                centerX - radius,
+                centerY - radius,
+                centerZ - radius,
+                centerX + radius,
+                centerY + radius,
+                centerZ + radius
+        );
+    }
+
+    private boolean shouldTrackWardEntity(AnchoredEffectInstance effect, Entity entity) {
+        if (entity.isRemoved()) {
+            return false;
+        }
+        if (entity instanceof ServerPlayer player && (player.isSpectator() || effect.ownerMatches(player.getUUID()))) {
+            return false;
+        }
+        return true;
     }
 }

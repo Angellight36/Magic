@@ -9,7 +9,7 @@
 - Keep `Notes/currentImpl.md` current as systems, JSON assets, and data-driven content are added.
 - Keep `Notes/SpellResolutionReference.md` current as we retune intent, source, and recipient scoring.
 - Keep `Notes/LocksAndKeys.md` current as keyed locks, physical locks, and future seal types evolve.
-- Build real spell authoring UI once we move past the temporary command-driven workflow.
+- Evolve the current `glyph_focus` composer into the longer-term input model, including timed glyph registration and more direct hotkey casting.
 - Build visible world interactions on top of the anchored effect framework, including magical scars and richer ward behavior.
 - Keep tuning the weighted interpreter as more glyphs, rituals, and mixed-purpose spell chains are added.
 - Expand the generalized block pattern tag system beyond `MAGIC_LOCKED`, including seals, keyed runes, cursed bindings, and future entity-facing tags.
@@ -26,7 +26,7 @@
   - vanilla `LargeFireball` fireball visual
   - `FLAME` / `SMOKE` fireball trail particles
   - `BLAZE_SHOOT` fireball launch sound
-  - temporary text HUD for mana and spell feedback
+  - temporary mana bar / spell feedback HUD art
   - debug chat-only ward activation feedback
 - Add automated gameplay tests once the first real spell execution path exists.
 - Keep the core magic systems packaged as one mod, but design APIs/data boundaries so a future modpack can add enemies, structures, and content that implement the system cleanly.

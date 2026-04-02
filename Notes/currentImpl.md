@@ -205,9 +205,10 @@ Primary implementation:
 
 ### 8. Client HUD and spell feedback sync
 
-- Text-based mana HUD exists as a temporary placeholder UI layer
-- Short-lived text spell feedback can appear on the client HUD after analysis/casts
-- Mana and spell feedback use Fabric payloads so a richer HUD can replace the text later without changing the server authority model
+- An always-visible mana HUD now exists as an early-alpha placeholder UI layer
+- The mana HUD now uses segmented mana pips, with optional debug-detail text for exact values and regeneration
+- Short-lived spell feedback can appear on the client HUD after analysis/casts without relying on chat alone
+- Mana and spell feedback use Fabric payloads so richer final HUD art can replace the current placeholder layer without changing the server authority model
 
 Primary implementation:
 
@@ -215,6 +216,22 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\SpellFeedbackPayload.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicClientNetworking.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicHudOverlay.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\network\MagicNetworking.java`
+
+### 8.5. Client spell composer and quick-cast loop
+
+- A held `glyph_focus` item now acts as the current player-facing casting tool for Early Alpha
+- Pressing `G` while holding the focus opens a client-side glyph composer
+- The composer can append glyphs by category, analyze the current chain, cast it, remove the last glyph, or clear the chain
+- Pressing `R` while holding the focus quick-casts the last composed chain
+- The composer currently reuses the existing `/magic analyze chain ...` and `/magic cast chain ...` server commands under the hood so the early gameplay loop does not fork the spell runtime yet
+
+Primary implementation:
+
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\GlyphFocusItem.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\MagicCastingClientController.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\GlyphComposerScreen.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\client\java\com\anthony\magicgame\client\GlyphComposerState.java`
 
 ### 9. Seeded prototype spells currently available
 
@@ -258,14 +275,17 @@ Source:
 - Levers, pistons, and similar mechanisms remain magic-lock-only right now.
 - A targeted lock debug view can now show red particles for locked physical-lock targets and green particles for unlocked ones.
 - Construction chains can now place short prototype stone paths and raised stone walls.
+- `stone_path` now replaces targeted ground surfaces instead of always floating one block above them.
 
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\ConstructionPlacementRules.java`
 
 ### 11. Prototype item and recipe foundation
 
 - First custom items now exist:
+  - `glyph_focus`
   - `linked_key`
   - `physical_lock`
 - First manual data JSONs now exist for:
@@ -277,13 +297,16 @@ Primary implementation:
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicItems.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\GlyphFocusItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\LinkedKeyItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\PhysicalLockItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicRecipeSerializers.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\LinkedKeyCopyRecipe.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\lang\en_us.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\glyph_focus.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\linked_key.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\glyph_focus.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\linked_key_copying.json`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\physical_lock.json`
 
@@ -293,6 +316,7 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\LinkedKeyItemTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainParserTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\ConstructionPlacementRulesTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellFlowRulesTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellInterpreterTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellResolverTest.java`
@@ -348,9 +372,10 @@ Primary implementation:
 - `fireball` debug visualization currently uses vanilla `LargeFireball`
 - `fireball` launch feedback currently uses vanilla `FLAME` and `SMOKE` particles
 - `fireball` launch feedback currently uses vanilla `BLAZE_SHOOT`
+- `glyph_focus` currently uses the vanilla `amethyst_shard` texture through a generated item model
 - `linked_key` currently uses the vanilla `tripwire_hook` texture through a generated item model
 - `physical_lock` currently uses the vanilla `iron_door_top` texture through a generated item model
-- mana and spell state currently use a temporary text HUD instead of final art
+- mana and spell state currently use a temporary placeholder HUD instead of final art
 - Ward activation currently uses debug system chat messages instead of custom UI/audio
 
 ## Asset management status
@@ -369,7 +394,7 @@ We should pull in generated assets once we start one or more of these:
 
 - Rich world interaction beyond placeholder particles, sounds, projectiles, and anchor state
 - magical scars or other persistent environmental consequences
-- spell authoring UI
+- timing-based or shorthand-heavy spell input beyond the current button-driven composer
 - enemies or AI using the magic system
 - modpack integration hooks beyond keeping the architecture clean
 - asset pipeline beyond placeholder icon and generated item JSON
@@ -377,7 +402,7 @@ We should pull in generated assets once we start one or more of these:
 ## Next steps
 
 1. Add more real spell outcomes beyond the current placeholder `fireball` and ward feedback path.
-2. Build a proper spell authoring UI on top of the current custom chain commands.
+2. Evolve the current `glyph_focus` composer beyond explicit buttons into richer hotkeys, shorthand, and timing-based spell input.
 3. Add magical scar persistence and decay behavior on top of the anchored effect framework.
 4. Replace temporary vanilla placeholders with project-owned visuals, audio, and feedback once asset work starts.
 5. Add more multiplayer content hooks so future enemies and content mods can adopt the core system cleanly.

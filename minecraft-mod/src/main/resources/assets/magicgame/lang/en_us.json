@@ -1,4 +1,8 @@
 {
+  "item.magicgame.glyph_focus": "Glyph Focus",
   "item.magicgame.linked_key": "Linked Key",
-  "item.magicgame.physical_lock": "Physical Lock"
+  "item.magicgame.physical_lock": "Physical Lock",
+  "key.categories.magicgame.controls": "Magic",
+  "key.magicgame.open_composer": "Open Glyph Composer",
+  "key.magicgame.quick_cast_last": "Quick-Cast Last Spell"
 }

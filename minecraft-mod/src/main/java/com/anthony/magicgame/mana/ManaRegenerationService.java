@@ -1,5 +1,6 @@
 package com.anthony.magicgame.mana;
 
+import com.anthony.magicgame.network.MagicNetworking;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -31,6 +32,7 @@ public final class ManaRegenerationService {
             int before = mana.currentMana();
             mana.regenerate();
             changed |= before != mana.currentMana();
+            MagicNetworking.syncMana(player, mana);
         }
 
         if (changed) {

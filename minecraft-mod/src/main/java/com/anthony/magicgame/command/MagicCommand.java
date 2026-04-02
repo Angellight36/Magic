@@ -10,6 +10,7 @@ import com.anthony.magicgame.spell.GlyphDefinition;
 import com.anthony.magicgame.spell.PrototypeSpellDefinition;
 import com.anthony.magicgame.spell.SpellChain;
 import com.anthony.magicgame.spell.SpellChainParser;
+import com.anthony.magicgame.spell.ConstructionPlacementRules;
 import com.anthony.magicgame.spell.SpellFlowRules;
 import com.anthony.magicgame.spell.SpellIntent;
 import com.anthony.magicgame.spell.SpellRecipient;
@@ -477,9 +478,11 @@ public final class MagicCommand {
 
     private static void maybeSendSpellFeedback(net.minecraft.server.MinecraftServer server, ServerPlayer player, String title, String detail) {
         MagicDebugSettings settings = MagicDebugSettings.get(server);
-        if (settings.isFeatureActive(MagicDebugFeature.SPELL_FEEDBACK_TEXT)) {
-            MagicNetworking.sendSpellFeedback(player, title, detail);
-        }
+        MagicNetworking.sendSpellFeedback(
+                player,
+                title,
+                settings.isFeatureActive(MagicDebugFeature.SPELL_FEEDBACK_TEXT) ? detail : ""
+        );
     }
 
     private static String summarizePlan(SpellResolutionPlan plan) {
@@ -815,7 +818,7 @@ public final class MagicCommand {
         int placed = 0;
         for (int step = 0; step < 4; step++) {
             BlockPos cursor = start.relative(forward, step);
-            if (tryPlaceConstructBlock(level, cursor, Blocks.STONE_BRICKS.defaultBlockState())) {
+            if (tryPlacePathBlock(level, cursor, Blocks.STONE_BRICKS.defaultBlockState())) {
                 placed++;
             }
         }
@@ -850,9 +853,20 @@ public final class MagicCommand {
         if (hit != null) {
             BlockPos pos = hit.getBlockPos();
             BlockState hitState = level.getBlockState(pos);
+            if (ConstructionPlacementRules.shouldReplaceTargetedSurface(hitState, level.getBlockEntity(pos) != null)) {
+                return pos;
+            }
             return hitState.canBeReplaced() ? pos : pos.above();
         }
         return player.blockPosition().relative(player.getDirection());
+    }
+
+    private static boolean tryPlacePathBlock(ServerLevel level, BlockPos pos, BlockState state) {
+        BlockState existing = level.getBlockState(pos);
+        if (!ConstructionPlacementRules.canPlacePathSegment(existing, level.getBlockEntity(pos) != null, level.getBlockState(pos.below()))) {
+            return false;
+        }
+        return level.setBlock(pos, state, 3);
     }
 
     private static boolean tryPlaceConstructBlock(ServerLevel level, BlockPos pos, BlockState state) {

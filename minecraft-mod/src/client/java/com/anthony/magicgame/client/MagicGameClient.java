@@ -9,6 +9,9 @@ import net.fabricmc.api.ClientModInitializer;
 public final class MagicGameClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
+        MagicCastingClientController.register();
+        MagicClientNetworking.register();
+        MagicHudOverlay.register();
         MagicGameMod.LOGGER.info("Magic client bootstrap ready.");
     }
 }

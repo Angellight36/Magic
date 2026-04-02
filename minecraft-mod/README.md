@@ -16,14 +16,17 @@ A curated modpack can still come later once the core systems are stable and we k
 
 - Fabric 1.21.11 bootstrap
 - Server-persistent player mana with automatic regeneration
+- A held `glyph_focus` item plus keybound glyph composer for building and casting chains without chat commands
+- A quick-cast loop for reusing the last composed spell during multiplayer playtests
+- An always-visible mana HUD with optional debug-detail text
 - Dedicated-server-safe `/magic` and `/magicstatus` prototype commands
 - Global and per-feature debug toggles for temporary testing visuals
 - Initial glyph registry based on the existing design notes
 - Prototype spell registry plus first-pass interpretation and resolution
 - Persistent anchored effects with a working `alert_ward` prototype
-- Unit tests around mana, spell registry, and prototype spell structure
+- Unit tests around mana, spell registry, prototype spell structure, and construction placement rules
 
-## Commands
+## Playtest controls
 
 From this folder you can use:
 
@@ -37,14 +40,30 @@ The helper scripts pin the workspace to the local JDK 21 install at `C:\Program 
 
 The first server launch may create the run directory and EULA file. Set `run/eula.txt` to `eula=true` before leaving the server up for normal playtests.
 
-Prototype command examples:
+Early Alpha casting loop:
+
+```text
+1. Craft or grab a Glyph Focus.
+2. Hold it in either hand.
+3. Press G to open the Glyph Composer.
+4. Click glyphs to build a chain.
+5. Press Enter or click Cast to send the spell.
+6. Press R later to quick-cast the last composed chain.
+```
+
+Prototype commands still exist for debugging and admin-style testing:
 
 ```text
 /magic status
+/magic glyphs
+/magic analyze fireball
+/magic analyze chain gather fire shape separate forward direct stabilize on_impact release
 /magic debug true
 /magic debug feature ward_boundary_particles true
+/magic debug feature mana_hud_text true
 /magic spells
 /magic cast fireball
+/magic cast chain gather fire shape separate forward direct stabilize on_impact release
 /magic anchor alert_ward
 /magic anchors
 /magic mana refill
@@ -54,3 +73,4 @@ Prototype command examples:
 
 - Local Fabric docs mirror: `C:\Users\antho\Desktop\Magic\FabricDocs`
 - Current implementation snapshot: `C:\Users\antho\Desktop\Magic\Notes\currentImpl.md`
+- Early Alpha release notes: `C:\Users\antho\Desktop\Magic\Notes\Releases\0.1.0-alpha.1.md`
