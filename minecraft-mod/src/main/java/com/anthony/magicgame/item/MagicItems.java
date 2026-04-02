@@ -4,17 +4,20 @@ import com.anthony.magicgame.MagicGameMod;
 import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import java.util.function.Function;
 
 /**
  * Registers the prototype items used by the current magic systems.
  */
 public final class MagicItems {
-    public static final Item GLYPH_FOCUS = register("glyph_focus", new GlyphFocusItem(new Item.Properties().stacksTo(1)));
-    public static final Item LINKED_KEY = register("linked_key", new LinkedKeyItem(new Item.Properties().stacksTo(1)));
-    public static final Item PHYSICAL_LOCK = register("physical_lock", new PhysicalLockItem(new Item.Properties()));
+    public static final Item GLYPH_FOCUS = register("glyph_focus", properties -> new GlyphFocusItem(properties.stacksTo(1)));
+    public static final Item LINKED_KEY = register("linked_key", properties -> new LinkedKeyItem(properties.stacksTo(1)));
+    public static final Item PHYSICAL_LOCK = register("physical_lock", PhysicalLockItem::new);
 
     private MagicItems() {
     }
@@ -28,7 +31,10 @@ public final class MagicItems {
         });
     }
 
-    private static Item register(String id, Item item) {
-        return Registry.register(BuiltInRegistries.ITEM, Identifier.fromNamespaceAndPath(MagicGameMod.MOD_ID, id), item);
+    private static Item register(String id, Function<Item.Properties, Item> factory) {
+        Identifier identifier = Identifier.fromNamespaceAndPath(MagicGameMod.MOD_ID, id);
+        ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, identifier);
+        Item.Properties properties = new Item.Properties().setId(key);
+        return Registry.register(BuiltInRegistries.ITEM, identifier, factory.apply(properties));
     }
 }
