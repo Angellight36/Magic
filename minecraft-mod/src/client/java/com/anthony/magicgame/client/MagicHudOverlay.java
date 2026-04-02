@@ -14,7 +14,7 @@ import net.minecraft.util.Mth;
 import net.minecraft.util.Util;
 
 /**
- * Renders the early-alpha mana indicator and recent spell feedback while final UI art is still pending.
+ * Renders the current dev-build mana indicator and recent spell feedback while final UI art is still pending.
  */
 public final class MagicHudOverlay {
     private static final int MANA_SEGMENTS = 10;

@@ -13,10 +13,9 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.FormattedCharSequence;
 
 /**
- * Simple early-alpha spell composer that lets players mash together glyph chains without typing chat commands.
+ * Simple dev-build spell composer that lets players mash together glyph chains without typing chat commands.
  */
 public final class GlyphComposerScreen extends Screen {
     private static final int GLYPHS_PER_PAGE = 16;
@@ -57,25 +56,52 @@ public final class GlyphComposerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float partialTick) {
-        renderTransparentBackground(context);
-        super.render(context, mouseX, mouseY, partialTick);
-
         int left = Math.max(16, width / 2 - 180);
         int top = 18;
-        context.fill(left - 8, top - 8, left + 360, height - 18, 0xAA08111F);
+        context.fill(0, 0, width, height, 0xC010141A);
+        context.fill(left - 8, top - 8, left + 360, height - 18, 0xE0141C28);
+
+        super.render(context, mouseX, mouseY, partialTick);
+
         context.drawString(font, title, left, top, 0xFFFFFF, false);
-        context.drawString(font, Component.literal("Hold a Glyph Focus. Enter casts, Backspace removes, Delete clears."), left, top + 12, 0xB8D8FF, false);
+        context.drawString(font, Component.literal("Hold a Glyph Focus. Enter casts, Backspace removes, Delete clears."), left, top + 12, 0xBFD7E8, false);
 
         int chainTop = top + 28;
         context.drawString(font, Component.literal("Current Chain"), left, chainTop, 0xFFE8A3, false);
-        List<FormattedCharSequence> wrappedChain = font.split(Component.literal(currentChainLabel()), 340);
-        for (int index = 0; index < Math.min(3, wrappedChain.size()); index++) {
-            context.drawString(font, wrappedChain.get(index), left, chainTop + 12 + index * (font.lineHeight + 2), 0xFFFFFF, false);
-        }
+        renderChainPreview(context, left, chainTop + 12);
 
         int footerY = height - 54;
         context.drawString(font, Component.literal("Last Quick-Cast: " + lastCastLabel()), left, footerY, 0xA7F3FF, false);
         context.drawString(font, Component.literal("Category Page " + (page + 1) + "/" + Math.max(1, pageCount())), left, footerY + 12, 0x9FB2C7, false);
+    }
+
+    private void renderChainPreview(GuiGraphics context, int left, int top) {
+        context.fill(left - 4, top - 4, left + 344, top + 38, 0xA30A1018);
+        List<String> glyphIds = GlyphComposerState.currentGlyphs();
+        if (glyphIds.isEmpty()) {
+            context.drawString(font, Component.literal("(empty)"), left, top + 12, 0x8DA2B8, false);
+            return;
+        }
+
+        int x = left;
+        int y = top;
+        int lineHeight = font.lineHeight + 6;
+        for (String glyphId : glyphIds) {
+            String label = glyphId.replace('_', ' ');
+            int chipWidth = font.width(label) + 10;
+            if (x + chipWidth > left + 340) {
+                x = left;
+                y += lineHeight;
+            }
+            if (y > top + lineHeight * 2) {
+                context.drawString(font, Component.literal("..."), x, y, 0x8DA2B8, false);
+                return;
+            }
+
+            context.fill(x - 2, y - 2, x + chipWidth, y + font.lineHeight + 2, 0xCC1D2A3A);
+            context.drawString(font, Component.literal(label), x + 3, y, 0xFFFFFF, false);
+            x += chipWidth + 4;
+        }
     }
 
     private void refreshComposerWidgets() {
@@ -187,10 +213,6 @@ public final class GlyphComposerScreen extends Screen {
     private static String formatCategoryLabel(GlyphCategory category) {
         String normalized = category.name().toLowerCase(Locale.ROOT).replace('_', ' ');
         return Character.toUpperCase(normalized.charAt(0)) + normalized.substring(1);
-    }
-
-    private static String currentChainLabel() {
-        return GlyphComposerState.hasCurrentChain() ? GlyphComposerState.currentChainText() : "(empty)";
     }
 
     private static String lastCastLabel() {

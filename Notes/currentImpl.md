@@ -14,6 +14,8 @@ This file tracks the current state of the Magic prototype so we can see what alr
 - Focused system notes:
   - `C:\Users\antho\Desktop\Magic\Notes\SpellResolutionReference.md`
   - `C:\Users\antho\Desktop\Magic\Notes\LocksAndKeys.md`
+  - `C:\Users\antho\Desktop\Magic\Notes\EffectRuntimeAudit.md`
+  - `C:\Users\antho\Desktop\Magic\Notes\ReleaseVersioning.md`
 
 ## Implemented systems
 
@@ -205,7 +207,7 @@ Primary implementation:
 
 ### 8. Client HUD and spell feedback sync
 
-- An always-visible mana HUD now exists as an early-alpha placeholder UI layer
+- An always-visible mana HUD now exists as a current dev-build placeholder UI layer
 - The mana HUD now uses segmented mana pips, with optional debug-detail text for exact values and regeneration
 - Short-lived spell feedback can appear on the client HUD after analysis/casts without relying on chat alone
 - Mana and spell feedback use Fabric payloads so richer final HUD art can replace the current placeholder layer without changing the server authority model
@@ -220,9 +222,10 @@ Primary implementation:
 
 ### 8.5. Client spell composer and quick-cast loop
 
-- A held `glyph_focus` item now acts as the current player-facing casting tool for Early Alpha
+- A held `glyph_focus` item now acts as the current player-facing casting tool for current dev builds
 - Pressing `G` while holding the focus opens a client-side glyph composer
 - The composer can append glyphs by category, analyze the current chain, cast it, remove the last glyph, or clear the chain
+- The composer now shows the current chain as visible glyph chips while you build it and uses a neutral dark overlay instead of the earlier heavy blue tint
 - Pressing `R` while holding the focus quick-casts the last composed chain
 - The composer currently reuses the existing `/magic analyze chain ...` and `/magic cast chain ...` server commands under the hood so the early gameplay loop does not fork the spell runtime yet
 
@@ -250,8 +253,10 @@ Source:
 
 ### 10. Prototype cast effects currently implemented
 
-- Fire traveling chains can still spawn the temporary vanilla `LargeFireball` placeholder when the fireball debug visuals are enabled.
+- Fire traveling chains now use an owned traveling-spell runtime for range, impact selection, direct damage, splash damage, and burn duration.
+- Fire traveling chains still use vanilla particles and sounds as temporary presentation placeholders.
 - Force traveling chains can now strike and knock back a looked-at living target.
+- Force traveling chains now use the same owned traveling-spell runtime rather than a borrowed vanilla projectile mechanic.
 - Restoration chains can heal the caster or a looked-at living target depending on the chain references.
 - Restoration targeting now uses weighted recipient scoring and can resolve ambiguously instead of following one hard rule.
 - Vitality transfer chains can now convert the caster's health into stronger healing for a looked-at target.
@@ -281,6 +286,8 @@ Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\ConstructionPlacementRules.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\effect\PrototypeSpellEffectService.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\effect\TravelingSpellRuntime.java`
 
 ### 11. Prototype item and recipe foundation
 
@@ -324,6 +331,7 @@ Primary implementation:
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\LockKeyingTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\PatternTaggedBlocksTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstanceTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\TravelingSpellRuntimeTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\CoreGlyphRegistryTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\PrototypeSpellRegistryTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\mana\ManaProfileTest.java`
@@ -369,9 +377,9 @@ Primary implementation:
 - `alert_ward` boundary visualization currently uses vanilla `END_ROD` and `ENCHANT` particles
 - `alert_ward` activation currently uses vanilla `CRIT` and `END_ROD` particles
 - `alert_ward` activation currently uses vanilla `AMETHYST_BLOCK_CHIME`
-- `fireball` debug visualization currently uses vanilla `LargeFireball`
 - `fireball` launch feedback currently uses vanilla `FLAME` and `SMOKE` particles
 - `fireball` launch feedback currently uses vanilla `BLAZE_SHOOT`
+- `fireball` impact feedback currently uses vanilla `FLAME`, `SMOKE`, `LAVA`, and `GENERIC_EXPLODE`
 - `glyph_focus` currently uses the vanilla `amethyst_shard` texture through a generated item model
 - `linked_key` currently uses the vanilla `tripwire_hook` texture through a generated item model
 - `physical_lock` currently uses the vanilla `iron_door_top` texture through a generated item model
@@ -392,7 +400,7 @@ We should pull in generated assets once we start one or more of these:
 
 ## What does not exist yet
 
-- Rich world interaction beyond placeholder particles, sounds, projectiles, and anchor state
+- Rich world interaction beyond placeholder particles, sounds, and anchor state
 - magical scars or other persistent environmental consequences
 - timing-based or shorthand-heavy spell input beyond the current button-driven composer
 - enemies or AI using the magic system
@@ -401,7 +409,7 @@ We should pull in generated assets once we start one or more of these:
 
 ## Next steps
 
-1. Add more real spell outcomes beyond the current placeholder `fireball` and ward feedback path.
+1. Add more real spell outcomes beyond the current ward feedback placeholder path.
 2. Evolve the current `glyph_focus` composer beyond explicit buttons into richer hotkeys, shorthand, and timing-based spell input.
 3. Add magical scar persistence and decay behavior on top of the anchored effect framework.
 4. Replace temporary vanilla placeholders with project-owned visuals, audio, and feedback once asset work starts.

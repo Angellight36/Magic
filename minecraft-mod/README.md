@@ -17,7 +17,7 @@ A curated modpack can still come later once the core systems are stable and we k
 - Fabric 1.21.11 bootstrap
 - Server-persistent player mana with automatic regeneration
 - A held `glyph_focus` item plus keybound glyph composer for building and casting chains without chat commands
-- A quick-cast loop for reusing the last composed spell during multiplayer playtests
+- A quick-cast loop for reusing the last composed spell during multiplayer dev-release playtests
 - An always-visible mana HUD with optional debug-detail text
 - Dedicated-server-safe `/magic` and `/magicstatus` prototype commands
 - Global and per-feature debug toggles for temporary testing visuals
@@ -40,7 +40,7 @@ The helper scripts pin the workspace to the local JDK 21 install at `C:\Program 
 
 The first server launch may create the run directory and EULA file. Set `run/eula.txt` to `eula=true` before leaving the server up for normal playtests.
 
-Early Alpha casting loop:
+Current dev-build casting loop:
 
 ```text
 1. Craft or grab a Glyph Focus.
@@ -73,4 +73,5 @@ Prototype commands still exist for debugging and admin-style testing:
 
 - Local Fabric docs mirror: `C:\Users\antho\Desktop\Magic\FabricDocs`
 - Current implementation snapshot: `C:\Users\antho\Desktop\Magic\Notes\currentImpl.md`
-- Early Alpha release notes: `C:\Users\antho\Desktop\Magic\Notes\Releases\0.1.0-alpha.1.md`
+- Effect runtime audit: `C:\Users\antho\Desktop\Magic\Notes\EffectRuntimeAudit.md`
+- Release versioning note: `C:\Users\antho\Desktop\Magic\Notes\ReleaseVersioning.md`

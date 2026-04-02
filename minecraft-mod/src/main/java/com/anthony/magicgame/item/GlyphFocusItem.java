@@ -8,7 +8,7 @@ import net.minecraft.world.item.component.TooltipDisplay;
 import java.util.function.Consumer;
 
 /**
- * Early playtest casting focus that unlocks the client-side composer and quick-cast controls while held.
+ * Current dev-build casting focus that unlocks the client-side composer and quick-cast controls while held.
  */
 public final class GlyphFocusItem extends Item {
     public GlyphFocusItem(Properties properties) {

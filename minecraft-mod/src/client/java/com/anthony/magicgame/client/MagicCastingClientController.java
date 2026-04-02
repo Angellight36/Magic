@@ -12,7 +12,7 @@ import net.minecraft.world.InteractionHand;
 import org.lwjgl.glfw.GLFW;
 
 /**
- * Handles the early playtest casting loop built around a held focus item, a composer key, and a last-spell quick cast.
+ * Handles the current dev-build casting loop built around a held focus item, a composer key, and a last-spell quick cast.
  */
 public final class MagicCastingClientController {
     private static final KeyMapping.Category KEY_CATEGORY =
