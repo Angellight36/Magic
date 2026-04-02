@@ -33,11 +33,15 @@ public final class BlockPatternTagManager extends SavedData {
     }
 
     public boolean addTag(BlockPatternTag tag, ServerLevel level, BlockPos pos) {
+        return addTag(tag, level, pos, null);
+    }
+
+    public boolean addTag(BlockPatternTag tag, ServerLevel level, BlockPos pos, String keySignature) {
         BlockPos canonicalPos = PatternTaggedBlocks.canonicalize(level, pos);
         if (hasTag(tag, level, canonicalPos)) {
             return false;
         }
-        tags.add(TaggedBlockPatternState.from(tag, level, canonicalPos));
+        tags.add(TaggedBlockPatternState.from(tag, level, canonicalPos, keySignature));
         setDirty();
         return true;
     }
@@ -54,6 +58,14 @@ public final class BlockPatternTagManager extends SavedData {
     public boolean hasTag(BlockPatternTag tag, ServerLevel level, BlockPos pos) {
         BlockPos canonicalPos = PatternTaggedBlocks.canonicalize(level, pos);
         return tags.stream().anyMatch(state -> state.matches(tag, level, canonicalPos));
+    }
+
+    public TaggedBlockPatternState findTag(BlockPatternTag tag, ServerLevel level, BlockPos pos) {
+        BlockPos canonicalPos = PatternTaggedBlocks.canonicalize(level, pos);
+        return tags.stream()
+                .filter(state -> state.matches(tag, level, canonicalPos))
+                .findFirst()
+                .orElse(null);
     }
 
     public EnumSet<BlockPatternTag> tagsAt(ServerLevel level, BlockPos pos) {

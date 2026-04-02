@@ -11,6 +11,9 @@ This file tracks the current state of the Magic prototype so we can see what alr
   - `C:\Users\antho\Desktop\Magic\MagicDesign.md`
   - `C:\Users\antho\Desktop\Magic\MagicLore.md`
   - `C:\Users\antho\Desktop\Magic\MagicOverviewAndLore.md`
+- Focused system notes:
+  - `C:\Users\antho\Desktop\Magic\Notes\SpellResolutionReference.md`
+  - `C:\Users\antho\Desktop\Magic\Notes\LocksAndKeys.md`
 
 ## Implemented systems
 
@@ -47,6 +50,9 @@ This file tracks the current state of the Magic prototype so we can see what alr
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicItems.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\RuneKeyItem.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\PhysicalLockItem.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\BlockPatternTag.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\TaggedBlockPatternState.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\spell\pattern\BlockPatternTagManager.java`
@@ -241,21 +247,50 @@ Source:
 - Stateful blocks with exposed booleans can have those states re-enforced while a magical tag is active.
 - Container-backed blocks can still be tagged and blocked from manual interaction even when there is no useful open/closed property to freeze.
 - Locked blocks now block manual interaction until their magical lock state is removed.
+- Prototype keying now exists on top of the same lock state:
+  - `rune_key` can be attuned to a persistent signature
+  - `physical_lock` can apply the same lock state by item use
+  - holding a matching keyed rune can unlock keyed locks during interaction
+- Physical locks intentionally have no special resistance advantage over spell locks yet; they are currently an alternate application method.
 - Construction chains can now place short prototype stone paths and raised stone walls.
 
 Primary implementation:
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\command\MagicCommand.java`
 
-### 11. Tests currently in place
+### 11. Prototype item and recipe foundation
+
+- First custom items now exist:
+  - `rune_key`
+  - `physical_lock`
+- First manual data JSONs now exist for:
+  - item models
+  - language entries
+  - crafting recipes
+- Item visuals currently use placeholder vanilla item textures through generated item models.
+
+Primary implementation:
+
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\MagicItems.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\RuneKeyItem.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\java\com\anthony\magicgame\item\PhysicalLockItem.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\lang\en_us.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\rune_key.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\rune_key.json`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\physical_lock.json`
+
+### 12. Tests currently in place
 
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\debug\MagicDebugSettingsTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\item\RuneKeyItemTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellChainParserTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellFlowRulesTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellInterpreterTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\SpellResolverTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\PatternInteractionRulesTest.java`
+- `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\LockKeyingTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\pattern\PatternTaggedBlocksTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\effect\AnchoredEffectInstanceTest.java`
 - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\test\java\com\anthony\magicgame\spell\registry\CoreGlyphRegistryTest.java`
@@ -269,19 +304,34 @@ Primary implementation:
 1. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\fabric.mod.json`
    - Declares the mod id, version, entrypoints, dependency requirements, icon path, and metadata.
 
+2. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\lang\en_us.json`
+   - Current English names for prototype custom items.
+
+3. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\rune_key.json`
+   - Prototype generated item model using a placeholder vanilla texture.
+
+4. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
+   - Prototype generated item model using a placeholder vanilla texture.
+
+5. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\rune_key.json`
+   - Crafting recipe for the rune key.
+
+6. `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\data\magicgame\recipe\physical_lock.json`
+   - Crafting recipe for the physical lock.
+
 ### JSON-like/data-driven systems not created yet
 
 - No spell JSON definitions yet
 - No loot tables yet
-- No recipes yet
-- No blockstate/model JSON yet
-- No language JSON yet
+- No blockstate JSON yet
 - No data pack JSON yet
 
 ## Assets currently present
 
-- Existing icon only:
+- Current assets:
   - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\icon.png`
+  - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\rune_key.json`
+  - `C:\Users\antho\Desktop\Magic\minecraft-mod\src\main\resources\assets\magicgame\models\item\physical_lock.json`
 
 ## Temporary vanilla placeholders that need replacement later
 
@@ -291,6 +341,8 @@ Primary implementation:
 - `fireball` debug visualization currently uses vanilla `LargeFireball`
 - `fireball` launch feedback currently uses vanilla `FLAME` and `SMOKE` particles
 - `fireball` launch feedback currently uses vanilla `BLAZE_SHOOT`
+- `rune_key` currently uses the vanilla `amethyst_shard` texture through a generated item model
+- `physical_lock` currently uses the vanilla `tripwire_hook` texture through a generated item model
 - mana and spell state currently use a temporary text HUD instead of final art
 - Ward activation currently uses debug system chat messages instead of custom UI/audio
 
@@ -311,10 +363,9 @@ We should pull in generated assets once we start one or more of these:
 - Rich world interaction beyond placeholder particles, sounds, projectiles, and anchor state
 - magical scars or other persistent environmental consequences
 - spell authoring UI
-- custom items or blocks
 - enemies or AI using the magic system
 - modpack integration hooks beyond keeping the architecture clean
-- asset pipeline beyond the placeholder icon
+- asset pipeline beyond placeholder icon and generated item JSON
 
 ## Next steps
 

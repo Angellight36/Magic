@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
  * @param x block x position
  * @param y block y position
  * @param z block z position
+ * @param keySignature optional key signature required for keyed access
  * @param openState captured open-state snapshot when the tag was applied
  * @param poweredState captured powered-state snapshot when the tag was applied
  * @param extendedState captured extended-state snapshot when the tag was applied
@@ -26,6 +27,7 @@ public record TaggedBlockPatternState(
         int x,
         int y,
         int z,
+        String keySignature,
         Boolean openState,
         Boolean poweredState,
         Boolean extendedState
@@ -36,21 +38,27 @@ public record TaggedBlockPatternState(
             Codec.INT.fieldOf("x").forGetter(TaggedBlockPatternState::x),
             Codec.INT.fieldOf("y").forGetter(TaggedBlockPatternState::y),
             Codec.INT.fieldOf("z").forGetter(TaggedBlockPatternState::z),
+            Codec.STRING.optionalFieldOf("key_signature").forGetter(state -> Optional.ofNullable(state.keySignature())),
             Codec.BOOL.optionalFieldOf("open_state").forGetter(state -> Optional.ofNullable(state.openState())),
             Codec.BOOL.optionalFieldOf("powered_state").forGetter(state -> Optional.ofNullable(state.poweredState())),
             Codec.BOOL.optionalFieldOf("extended_state").forGetter(state -> Optional.ofNullable(state.extendedState()))
-    ).apply(instance, (tag, dimensionId, x, y, z, openState, poweredState, extendedState) -> new TaggedBlockPatternState(
+    ).apply(instance, (tag, dimensionId, x, y, z, keySignature, openState, poweredState, extendedState) -> new TaggedBlockPatternState(
             tag,
             dimensionId,
             x,
             y,
             z,
+            keySignature.orElse(null),
             openState.orElse(null),
             poweredState.orElse(null),
             extendedState.orElse(null)
     )));
 
     public static TaggedBlockPatternState from(BlockPatternTag tag, ServerLevel level, BlockPos pos) {
+        return from(tag, level, pos, null);
+    }
+
+    public static TaggedBlockPatternState from(BlockPatternTag tag, ServerLevel level, BlockPos pos, String keySignature) {
         BlockState state = level.getBlockState(pos);
         return new TaggedBlockPatternState(
                 tag,
@@ -58,6 +66,7 @@ public record TaggedBlockPatternState(
                 pos.getX(),
                 pos.getY(),
                 pos.getZ(),
+                keySignature,
                 state.hasProperty(BlockStateProperties.OPEN) ? state.getValue(BlockStateProperties.OPEN) : null,
                 state.hasProperty(BlockStateProperties.POWERED) ? state.getValue(BlockStateProperties.POWERED) : null,
                 state.hasProperty(BlockStateProperties.EXTENDED) ? state.getValue(BlockStateProperties.EXTENDED) : null

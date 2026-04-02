@@ -2,6 +2,7 @@ package com.anthony.magicgame;
 
 import com.anthony.magicgame.command.MagicCommand;
 import com.anthony.magicgame.command.MagicStatusCommand;
+import com.anthony.magicgame.item.MagicItems;
 import com.anthony.magicgame.mana.ManaRegenerationService;
 import com.anthony.magicgame.network.MagicNetworking;
 import com.anthony.magicgame.spell.effect.AnchoredEffectTicker;
@@ -22,6 +23,7 @@ public final class MagicGameMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        MagicItems.register();
         MagicNetworking.register();
         ManaRegenerationService.register();
         AnchoredEffectTicker.register();

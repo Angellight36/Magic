@@ -1,5 +1,6 @@
 package com.anthony.magicgame.spell.pattern;
 
+import com.anthony.magicgame.item.RuneKeyItem;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -26,8 +27,21 @@ public final class LockingPatternInteractionGuard {
                 return InteractionResult.PASS;
             }
 
-            if (!LockedBlockManager.get(level.getServer()).isLocked(level, hitResult.getBlockPos())) {
+            LockedBlockManager lockManager = LockedBlockManager.get(level.getServer());
+            if (!lockManager.isLocked(level, hitResult.getBlockPos())) {
                 return InteractionResult.PASS;
+            }
+
+            String requiredSignature = lockManager.keySignature(level, hitResult.getBlockPos());
+            if (requiredSignature != null) {
+                String presentedSignature = RuneKeyItem.findMatchingSignature(serverPlayer, requiredSignature);
+                if (LockKeying.matches(requiredSignature, presentedSignature)) {
+                    lockManager.unlockWithKey(level, hitResult.getBlockPos(), presentedSignature);
+                    serverPlayer.sendSystemMessage(Component.literal(
+                            "The keyed lock yields to rune " + LockKeying.displaySignature(presentedSignature) + "."
+                    ));
+                    return InteractionResult.PASS;
+                }
             }
 
             serverPlayer.sendSystemMessage(Component.literal("A locking pattern prevents the block from being altered by hand."));

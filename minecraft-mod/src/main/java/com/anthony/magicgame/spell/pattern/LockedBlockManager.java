@@ -22,12 +22,29 @@ public final class LockedBlockManager {
         return BlockPatternTagManager.get(server).addTag(BlockPatternTag.MAGIC_LOCKED, level, pos);
     }
 
+    public boolean lockWithKey(ServerLevel level, BlockPos pos, String keySignature) {
+        return BlockPatternTagManager.get(server).addTag(BlockPatternTag.MAGIC_LOCKED, level, pos, keySignature);
+    }
+
     public boolean unlock(ServerLevel level, BlockPos pos) {
         return BlockPatternTagManager.get(server).removeTag(BlockPatternTag.MAGIC_LOCKED, level, pos);
     }
 
+    public boolean unlockWithKey(ServerLevel level, BlockPos pos, String keySignature) {
+        String storedSignature = keySignature(level, pos);
+        if (storedSignature == null || !storedSignature.equals(keySignature)) {
+            return false;
+        }
+        return unlock(level, pos);
+    }
+
     public boolean isLocked(ServerLevel level, BlockPos pos) {
         return BlockPatternTagManager.get(server).hasTag(BlockPatternTag.MAGIC_LOCKED, level, pos);
+    }
+
+    public String keySignature(ServerLevel level, BlockPos pos) {
+        TaggedBlockPatternState state = BlockPatternTagManager.get(server).findTag(BlockPatternTag.MAGIC_LOCKED, level, pos);
+        return state == null ? null : state.keySignature();
     }
 
     public int size() {
