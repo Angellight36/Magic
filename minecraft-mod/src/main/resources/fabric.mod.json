@@ -15,10 +15,10 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "com.anthony.magicgame.MagicGameMod"
+      "com.angellight.magicgame.MagicGameMod"
     ],
     "client": [
-      "com.anthony.magicgame.client.MagicGameClient"
+      "com.angellight.magicgame.client.MagicGameClient"
     ]
   },
   "depends": {
@@ -28,3 +28,4 @@
     "fabric-api": "*"
   }
 }
+
